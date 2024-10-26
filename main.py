@@ -1,5 +1,5 @@
 from env import DinoGameEnv
-from agents import DQNAgent
+from agents.init import DQNAgent
 from utils.logger import Logger
 from config import Config
 import torch
