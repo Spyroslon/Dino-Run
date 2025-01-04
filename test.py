@@ -32,6 +32,10 @@ def test_dino_game():
         # Wait to observe the game
         # time.sleep(5)
         print('initially here')
+        time.sleep(2)
+        print('pressing down now')
+        page.keyboard.down("ArrowDown")
+
         # Optional: Print game state
         while True:
             game_state = page.evaluate("""() => {
