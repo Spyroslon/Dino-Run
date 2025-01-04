@@ -1,4 +1,5 @@
 .venv
+venv
 saved_models
 *.pyc
 *.pyo

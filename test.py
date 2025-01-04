@@ -30,10 +30,10 @@ def test_dino_game():
         print("Game started!")
         
         # Wait to observe the game
-        time.sleep(5)
-        
+        # time.sleep(5)
+        print('initially here')
         # Optional: Print game state
-        try:
+        while True:
             game_state = page.evaluate("""() => {
                 const runner = Runner.instance_;
                 return {
@@ -44,9 +44,11 @@ def test_dino_game():
                 }
             }""")
             print("Game State:", game_state)
-        except Exception as e:
-            print("Couldn't get game state:", e)
+            # except Exception as e:
+            #     print("Couldn't get game state:", e)
         
+        print('then here')
+
         # Keep the browser open for observation
         time.sleep(5)
         
