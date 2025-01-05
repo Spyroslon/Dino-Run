@@ -61,7 +61,7 @@ class DinoEnv(gym.Env):
         
         # Check if the action is legal
         if action_str not in self.legal_actions[current_status]:
-            reward = -10.0  # Penalty for illegal action
+            reward = -5.0  # Penalty for illegal action
             
             print(f'Status: {self.statuses[current_status]} | Action: {action_str} | Reward: {reward} | Illegal action')
             terminated = False
@@ -93,10 +93,10 @@ class DinoEnv(gym.Env):
 
         return {
             "status": state["status"],
-            "distance": np.array([state["distance"]], dtype=np.float32),
-            "speed": np.array([state["speed"]], dtype=np.float32),
-            "jump_velocity": np.array([state["jump_velocity"]], dtype=np.float32),
-            "y_position": np.array([state["y_position"]], dtype=np.float32),
+            "distance": np.array([state["distance"] / 1000.0], dtype=np.float32),
+            "speed": np.array([state["speed"] / 10.0], dtype=np.float32),
+            "jump_velocity": np.array([state["jump_velocity"] / 50.0], dtype=np.float32),
+            "y_position": np.array([state["y_position"] / 100.0], dtype=np.float32),
             "obstacles": np.array(state["obstacles"], dtype=np.float32)
         }
 

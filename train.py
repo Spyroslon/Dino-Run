@@ -18,6 +18,9 @@ model = PPO(
     "MultiInputPolicy",
     env,
     verbose=1,
+    learning_rate=1e-4,
+    n_steps=4096,
+    batch_size=128,
     tensorboard_log="./tensorboard_logs/",
 )
 
