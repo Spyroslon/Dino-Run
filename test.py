@@ -62,3 +62,23 @@ def test_dino_game():
 
 if __name__ == "__main__":
     test_dino_game()
+
+
+# with sync_playwright() as p:
+#     browser = p.chromium.launch(headless=False)
+#     context = browser.new_context(offline=True)
+#     page = context.new_page()
+
+#     try:
+#         page.goto('http://example.com') # Try to navigate to Google to trigger the offline dinosaur game
+#     except:
+#         pass # This error is expected since we're offline
+
+#     time.sleep(2) # Wait for the game to be ready
+#     # Start the game with spacebar
+#     page.keyboard.press('Space')
+#     print("Game started!")
+#     # time.sleep(5)
+#     page.wait_for_event("close" , timeout = 0)
+#     print('after')
+#     # after sleep finishes the page closes automatically

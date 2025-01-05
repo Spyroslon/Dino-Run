@@ -1,6 +1,6 @@
 import gymnasium as gym
 from gymnasium import spaces
-from browser import DinoBrowser
+from game import DinoBrowser
 
 class DinoEnv(gym.Env):
     def __init__(self):

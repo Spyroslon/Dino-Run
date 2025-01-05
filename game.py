@@ -31,12 +31,30 @@ class DinoGame:
     
     def send_action(self, action):
         """Send the specified action to the game."""
-        if action == "jump":
-            self.page.keyboard.press("Space")
-        elif action == "duck":
-            self.page.keyboard.down("ArrowDown")
+        actions = {
+        "run": lambda: print("Action: Run"),
+        "jump": lambda: (
+            print("Action: Jump"),
+            self.page.keyboard.press("Space"),
+        ),
+        "fall": lambda: (
+            print("Action: Fall"),
+            self.page.keyboard.press("ArrowDown"),  # Triggers faster descent
+        ),
+        "duck": lambda: (
+            print("Action: Duck"),
+            self.page.evaluate("() => Runner.instance_.tRex.setDuck(true)"),
+        ),
+        "stand": lambda: (
+            print("Action: Stand"),
+            self.page.evaluate("() => Runner.instance_.tRex.setDuck(false)"),
+        ),
+    }
+        # Execute the action if valid, otherwise log an invalid action.
+        if action in actions:
+            actions[action]()  # Execute the corresponding lambda function
         else:
-            self.page.keyboard.up("ArrowDown")
+            print(f"Invalid action: {action}")
     
     def close(self):
         """Close the browser session gracefully."""
@@ -46,7 +64,7 @@ class DinoGame:
     def run(self):
         """Keep the game session active without blocking."""
         # Open game and start it
-        self.start_game()\
+        self.start_game()
 
         # Variables for FPS measurement
         frame_count = 0
@@ -61,6 +79,7 @@ class DinoGame:
 
             # Example: Send a random action (or based on some logic)
             self.send_action("jump")
+
             # Calculate FPS (frames per second)
             elapsed_time = time.time() - start_time
             if elapsed_time >= 1.0:  # Calculate FPS every second
@@ -74,22 +93,3 @@ class DinoGame:
 # Initialize and run the game
 game = DinoGame()
 game.run()  # This will continuously interact with the game
-
-# with sync_playwright() as p:
-#     browser = p.chromium.launch(headless=False)
-#     context = browser.new_context(offline=True)
-#     page = context.new_page()
-
-#     try:
-#         page.goto('http://example.com') # Try to navigate to Google to trigger the offline dinosaur game
-#     except:
-#         pass # This error is expected since we're offline
-
-#     time.sleep(2) # Wait for the game to be ready
-#     # Start the game with spacebar
-#     page.keyboard.press('Space')
-#     print("Game started!")
-#     # time.sleep(5)
-#     page.wait_for_event("close" , timeout = 0)
-#     print('after')
-#     # after sleep finishes the page closes automatically
