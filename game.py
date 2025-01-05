@@ -16,7 +16,7 @@ class DinoGame:
             pass  # Expected since we're offline
         time.sleep(1)
         self.page.keyboard.press('Space')  # Start the game
-        print("Game started!")
+        time.sleep(1)
 
     def get_game_state(self):
         """Fetch game state parameters."""
@@ -36,51 +36,17 @@ class DinoGame:
     def send_action(self, action):
         """Send a specified action to the game."""
         if action == "run":
-            print("Action: Run")
+            pass  # No action needed
         elif action == "jump":
-            print("Action: Jump")
             self.page.keyboard.press("Space")
         elif action == "fall":
-            print("Action: Fall")
             self.page.keyboard.press("ArrowDown")
         elif action == "duck":
-            print("Action: Duck")
             self.page.evaluate("() => Runner.instance_.tRex.setDuck(true)")
         elif action == "stand":
-            print("Action: Stand")
             self.page.evaluate("() => Runner.instance_.tRex.setDuck(false)")
-        else:
-            print(f"Invalid action: {action}")
 
     def close(self):
         """Close the browser session gracefully."""
         self.browser.close()
         self.playwright.stop()
-
-    def run(self):
-        """Run the game for testing purposes."""
-        self.start_game()
-        frame_count = 0
-        start_time = time.time()
-
-        while True:
-            frame_count += 1
-            game_state = self.get_game_state()
-            if game_state:
-                print(game_state)
-
-            self.send_action("jump")  # Example action
-
-            # Calculate FPS
-            elapsed_time = time.time() - start_time
-            if elapsed_time >= 1.0:
-                fps = frame_count / elapsed_time
-                print(f"FPS: {fps:.2f}")
-                frame_count = 0
-                start_time = time.time()
-
-            time.sleep(0.05)
-
-# Initialize and run the game
-game = DinoGame()
-game.run()  # This will continuously interact with the game

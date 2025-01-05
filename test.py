@@ -1,84 +1,17 @@
-from playwright.sync_api import sync_playwright
-import time
+from stable_baselines3 import PPO
+from dino_env import DinoEnv
 
-def test_dino_game():
-    with sync_playwright() as p:
-        # Launch chromium browser
-        browser = p.chromium.launch(
-            headless=False,
-        )
-        
-        # Create a new context with offline mode enabled
-        context = browser.new_context(offline=True)
-        
-        # Create a new page
-        page = context.new_page()
-        
-        try:
-            # Try to navigate to Google to trigger the offline dinosaur game
-            page.goto('http://example.com')
-        except:
-            # This error is expected since we're offline
-            pass
-        
-        # Wait for the game to be ready
-        time.sleep(2)
-        
-        # Start the game with spacebar
-        page.keyboard.press('Space')
-        
-        print("Game started!")
-        
-        # Wait to observe the game
-        # time.sleep(5)
-        print('initially here')
-        time.sleep(2)
-        print('pressing down now')
-        page.keyboard.down("ArrowDown")
+# Load the environment and trained model
+env = DinoEnv()
+model = PPO.load("dino_model")
 
-        # Optional: Print game state
-        while True:
-            game_state = page.evaluate("""() => {
-                const runner = Runner.instance_;
-                return {
-                    speed: runner.currentSpeed,
-                    distance: runner.distanceMeter.getActualDistance(),
-                    isJumping: runner.tRex.jumping,
-                    yPos: runner.tRex.yPos
-                }
-            }""")
-            print("Game State:", game_state)
-            # except Exception as e:
-            #     print("Couldn't get game state:", e)
-        
-        print('then here')
+# Test the model
+obs = env.reset()
+done = False
 
-        # Keep the browser open for observation
-        time.sleep(5)
-        
-        # Clean up
-        context.close()
-        browser.close()
+while not done:
+    action, _ = model.predict(obs, deterministic=True)
+    obs, reward, done, info = env.step(action)
+    print(f"Action: {action}, Reward: {reward}")
 
-if __name__ == "__main__":
-    test_dino_game()
-
-
-# with sync_playwright() as p:
-#     browser = p.chromium.launch(headless=False)
-#     context = browser.new_context(offline=True)
-#     page = context.new_page()
-
-#     try:
-#         page.goto('http://example.com') # Try to navigate to Google to trigger the offline dinosaur game
-#     except:
-#         pass # This error is expected since we're offline
-
-#     time.sleep(2) # Wait for the game to be ready
-#     # Start the game with spacebar
-#     page.keyboard.press('Space')
-#     print("Game started!")
-#     # time.sleep(5)
-#     page.wait_for_event("close" , timeout = 0)
-#     print('after')
-#     # after sleep finishes the page closes automatically
+env.close()
