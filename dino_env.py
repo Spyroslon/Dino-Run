@@ -45,43 +45,38 @@ class DinoEnv(gym.Env):
         return observation, info
 
     def step(self, action):
-        observation = self._get_observation()
-        current_status = observation["status"]
+        # Get the observation before performing the action
+        original_observation = self._get_observation()
+        current_status = original_observation["status"]
 
-        # Checking for early termination
-        terminated = observation["status"] == self.statuses["CRASHED"]
-        if terminated:
+        # Check for early termination (crashed status before taking any action)
+        if current_status == self.statuses["CRASHED"]:
             reward = -100.0
+            terminated = True
             truncated = False
-            return observation, reward, terminated, truncated, {}
+            return original_observation, reward, terminated, truncated, {}
 
-        # status_map = {
-        #     'WAITING': 0,
-        #     'RUNNING': 1,
-        #     'JUMPING': 2,
-        #     'DUCKING': 3,
-        #     'CRASHED': 4
-        # }
-
-        # Check if action is legal
+        # Check if the action is legal
         action_str = ["run", "jump", "duck", "fall", "stand"][action]
-
-        print(f'observation {observation}')
-        print(f'action_str {action_str}')
-
         if action_str not in self.legal_actions[current_status]:
             # Illegal action punishment
             reward = -10.0
-            print(f'Illegal action {action_str}')
-            return observation, reward, False, False, {}
+            print(f'Illegal action: {action_str}')
+            terminated = False
+            truncated = False
+            return original_observation, reward, terminated, truncated, {}
 
-        # Perform the action
+        # Perform the action and get the new observation
         self.game.send_action(action_str)
-        observation = self._get_observation()
-        reward = self._compute_reward(observation)
-        terminated = observation["status"] == self.statuses["CRASHED"]
+        new_observation = self._get_observation()
+        reward = self._compute_reward(new_observation)
+
+        # Check for termination after the action
+        terminated = new_observation["status"] == self.statuses["CRASHED"]
         truncated = False
-        return observation, reward, terminated, truncated, {}
+
+        # Return the original observation (before the action)
+        return original_observation, reward, terminated, truncated, {}
 
     def _get_observation(self):
         state = self.game.get_game_state()
