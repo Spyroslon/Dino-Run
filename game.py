@@ -60,7 +60,7 @@ class DinoGame:
                 "obstacles": obstacles_features
             }
 
-            print(state)
+            # print(state)
             return state
 
         except Exception as e:
@@ -86,14 +86,15 @@ class DinoGame:
             self.page.evaluate("() => Runner.instance_.tRex.setDuck(false)")
         else:
             print(f"Unknown action: {action}")
+        time.sleep(.5) # sleep for a short duration to allow the action to take effect
 
     def close(self):
         """Close the browser session gracefully."""
         self.browser.close()
         self.playwright.stop()
 
-game = DinoGame()
-game.start_game()
-while True:
-    game.get_game_state()
-    time.sleep(1)
+# game = DinoGame()
+# game.start_game()
+# while True:
+#     game.get_game_state()
+#     time.sleep(1)
