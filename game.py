@@ -22,8 +22,6 @@ class DinoGame:
         """Fetch game state parameters."""
         try:
             distance_str = self.page.evaluate("() => Runner.instance_.distanceMeter.digits.join('')")
-            
-            # Handle empty string for distance
             distance = float(distance_str) if distance_str != '' else 0.0
             
             return {
@@ -42,7 +40,7 @@ class DinoGame:
         """Send a specified action to the game."""
         if action == "run":
             print('Running')
-            pass  # No action needed
+            pass  # No action needed for 'run'
         elif action == "jump":
             print('Jumping')
             self.page.keyboard.press("ArrowUp")
@@ -55,6 +53,8 @@ class DinoGame:
         elif action == "stand":
             print('Standing')
             self.page.evaluate("() => Runner.instance_.tRex.setDuck(false)")
+        else:
+            print(f"Unknown action: {action}")
 
     def close(self):
         """Close the browser session gracefully."""
