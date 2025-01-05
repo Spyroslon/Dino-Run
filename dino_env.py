@@ -74,7 +74,6 @@ class DinoEnv(gym.Env):
 
         # Check for termination after the action
         terminated = self.statuses[new_observation["status"]] == "CRASHED"
-        print("Crashed" if terminated else "Running")
         truncated = False
 
         # Return the original observation (before the action)
@@ -105,12 +104,10 @@ class DinoEnv(gym.Env):
 
         # Penalty for being in a non-running state
         if self.statuses[observation["status"]] != "RUNNING":
-            print("NOT RUNNING PENALTY")
             reward -= 0.1
 
         # Penalty for crashing
         if self.statuses[observation["status"]] == "CRASHED":
-            print("CRASHED")
             reward = -100.0
 
         return float(reward)
