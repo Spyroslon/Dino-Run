@@ -7,6 +7,7 @@ class DinoGame:
         self.browser = self.playwright.chromium.launch(headless=False, args=["--mute-audio"])
         self.context = self.browser.new_context(offline=True)
         self.page = self.context.new_page()
+        self.max_obstacles = 3
 
     def start_game(self):
         """Navigate to the Dino game and start it."""
@@ -32,6 +33,23 @@ class DinoGame:
                 'DUCKING': 3,
                 'CRASHED': 4
             }
+            
+            # Get obstacle details (xPos, yPos, width, height)
+            obstacles = self.page.evaluate("""
+                () => Runner.instance_.horizon.obstacles.map(o => ({
+                    x: o.xPos,
+                    y: o.yPos,
+                    width: o.width,
+                    height: o.height || 0
+                }))
+            """)
+            
+            # If there are fewer than max_obstacles, pad the data
+            while len(obstacles) < self.max_obstacles:
+                obstacles.append({"x": 0, "y": 0, "width": 0, "height": 0})
+
+            # Flatten obstacles into a list of features
+            obstacles_features = [value for obstacle in obstacles[:self.max_obstacles] for value in [obstacle["x"], obstacle["y"], obstacle["width"], obstacle["height"]]]
 
             state = {
                 "status": status_map[self.page.evaluate("() => Runner.instance_.tRex.status")],
@@ -39,7 +57,7 @@ class DinoGame:
                 "speed": float(self.page.evaluate("() => Runner.instance_.currentSpeed")),
                 "jump_velocity": float(self.page.evaluate("() => Runner.instance_.tRex.jumpVelocity")),
                 "y_position": float(self.page.evaluate("() => Runner.instance_.tRex.yPos")),
-                "obstacles": self.page.evaluate("() => Runner.instance_.horizon.obstacles.map(o => ({ x: o.xPos, y: o.yPos, width: o.width, height: o.height }))")
+                "obstacles": obstacles_features
             }
 
             print(state)
@@ -73,3 +91,9 @@ class DinoGame:
         """Close the browser session gracefully."""
         self.browser.close()
         self.playwright.stop()
+
+game = DinoGame()
+game.start_game()
+while True:
+    game.get_game_state()
+    time.sleep(1)
