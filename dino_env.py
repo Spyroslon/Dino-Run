@@ -26,7 +26,7 @@ class DinoEnv(gym.Env):
         self.current_score = 0
         self.previous_distance = 0
 
-        self.statuses = {"WAITING": 0, "RUNNING": 1, "JUMPING": 2, "DUCKING": 3, "CRASHED": 4}
+        self.statuses = {0: "WAITING", 1: "RUNNING", 2: "JUMPING", 3: "DUCKING", 4: "CRASHED"}
         self.legal_actions = {
             0: ["jump"],
             1: ["run", "jump", "duck"],
@@ -50,7 +50,7 @@ class DinoEnv(gym.Env):
         current_status = original_observation["status"]
 
         # Check for early termination (crashed status before taking any action)
-        if current_status == self.statuses["CRASHED"]:
+        if self.statuses[current_status] == "CRASHED":
             reward = -100.0
             terminated = True
             truncated = False
@@ -61,19 +61,20 @@ class DinoEnv(gym.Env):
         if action_str not in self.legal_actions[current_status]:
             # Illegal action punishment
             reward = -10.0
-            print(f'Status: {current_status} | Illegal action: {action_str}')
+            print(f'Status: {self.statuses[current_status]} | Illegal action: {action_str}')
             terminated = False
             truncated = False
             return original_observation, reward, terminated, truncated, {}
 
-        print(f'Status: {current_status} | Action: {action_str}')
+        print(f'Status: {self.statuses[current_status]} | Action: {action_str}')
         # Perform the action and get the new observation
         self.game.send_action(action_str)
         new_observation = self._get_observation()
         reward = self._compute_reward(new_observation)
 
         # Check for termination after the action
-        terminated = new_observation["status"] == self.statuses["CRASHED"]
+        terminated = self.statuses[new_observation["status"]] == "CRASHED"
+        print("Crashed" if terminated else "Running")
         truncated = False
 
         # Return the original observation (before the action)
@@ -103,11 +104,13 @@ class DinoEnv(gym.Env):
         self.previous_distance = current_distance
 
         # Penalty for being in a non-running state
-        if observation["status"] != self.statuses["RUNNING"]:
+        if self.statuses[observation["status"]] != "RUNNING":
+            print("NOT RUNNING PENALTY")
             reward -= 0.1
 
         # Penalty for crashing
-        if observation["status"] == self.statuses["CRASHED"]:
+        if self.statuses[observation["status"]] == "CRASHED":
+            print("CRASHED")
             reward = -100.0
 
         return float(reward)
