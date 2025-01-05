@@ -5,8 +5,8 @@ from dino_env import DinoEnv
 # Create the environment
 env = DinoEnv()
 
-# Initialize the model with MultiInputPolicy
-model = DQN("MultiInputPolicy", env, verbose=1, tensorboard_log="./dino_tensorboard/")
+# Initialize the model with CnnPolicy
+model = DQN("MultiInputPolicy", env, verbose=1, tensorboard_log="./dino_tensorboard/", buffer_size=1200000, learning_starts=1000)
 
 # Train the model
 model.learn(total_timesteps=100000)

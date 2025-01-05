@@ -14,6 +14,7 @@ class DinoGame:
             self.page.goto('http://example.com')  # Trigger offline dinosaur game
         except:
             pass  # Expected since we're offline
+        print('Starting game')
         time.sleep(.5)
         self.page.keyboard.press('Space')  # Start the game
         time.sleep(1)
@@ -23,15 +24,27 @@ class DinoGame:
         try:
             distance_str = self.page.evaluate("() => Runner.instance_.distanceMeter.digits.join('')")
             distance = float(distance_str) if distance_str != '' else 0.0
-            
-            return {
-                "status": self.page.evaluate("() => Runner.instance_.tRex.status"),
+
+            status_map = {
+                'WAITING': 0,
+                'RUNNING': 1,
+                'JUMPING': 2,
+                'DUCKING': 3,
+                'CRASHED': 4
+            }
+
+            state = {
+                "status": status_map[self.page.evaluate("() => Runner.instance_.tRex.status")],
                 "distance": distance,
                 "speed": float(self.page.evaluate("() => Runner.instance_.currentSpeed")),
                 "jump_velocity": float(self.page.evaluate("() => Runner.instance_.tRex.jumpVelocity")),
                 "y_position": float(self.page.evaluate("() => Runner.instance_.tRex.yPos")),
                 "obstacles": self.page.evaluate("() => Runner.instance_.horizon.obstacles.map(o => ({ x: o.xPos, y: o.yPos, width: o.width, height: o.height }))")
             }
+
+            print(state)
+            return state
+
         except Exception as e:
             print(f"Error fetching game state: {e}")
             return None

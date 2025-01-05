@@ -1,4 +1,4 @@
-# dino_env.py
+# todo: add legal actions, if not legal action punish and dont do action
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
@@ -114,7 +114,7 @@ class DinoEnv(gym.Env):
 
         # time.sleep(0.001)
 
-        print(current_obs, action)
+        # print(current_obs, action)
         observation = self._get_observation()
         reward = self._compute_reward(observation, action_performed)
         terminated = observation["status"] == 4
