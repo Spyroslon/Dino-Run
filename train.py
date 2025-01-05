@@ -6,7 +6,7 @@ from dino_env import DinoEnv
 env = DinoEnv()
 
 # Initialize the model with MultiInputPolicy
-model = PPO("MultiInputPolicy", env, verbose=1)
+model = PPO("MultiInputPolicy", env, verbose=1, tensorboard_log="./dino_tensorboard/")
 
 # Train the model
 model.learn(total_timesteps=10000)

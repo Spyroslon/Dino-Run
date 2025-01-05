@@ -14,15 +14,21 @@ class DinoGame:
             self.page.goto('http://example.com')  # Trigger offline dinosaur game
         except:
             pass  # Expected since we're offline
+        time.sleep(.5)
         self.page.keyboard.press('Space')  # Start the game
         time.sleep(1)
 
     def get_game_state(self):
         """Fetch game state parameters."""
         try:
+            distance_str = self.page.evaluate("() => Runner.instance_.distanceMeter.digits.join('')")
+            
+            # Handle empty string for distance
+            distance = float(distance_str) if distance_str != '' else 0.0
+            
             return {
                 "status": self.page.evaluate("() => Runner.instance_.tRex.status"),
-                "distance": float(self.page.evaluate("() => Runner.instance_.distanceMeter.getActualDistance()")),
+                "distance": distance,
                 "speed": float(self.page.evaluate("() => Runner.instance_.currentSpeed")),
                 "jump_velocity": float(self.page.evaluate("() => Runner.instance_.tRex.jumpVelocity")),
                 "y_position": float(self.page.evaluate("() => Runner.instance_.tRex.yPos")),

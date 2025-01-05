@@ -34,7 +34,7 @@ class DinoEnv(gym.Env):
     def _safe_get_state(self):
         """Safely get game state with retries"""
         state = self.game.get_game_state()
-        print(state)
+        # print(state)
         retry_count = 0
         
         while state is None and retry_count < self.max_retries:
@@ -54,7 +54,7 @@ class DinoEnv(gym.Env):
     def _safe_float(self, value, default=0.0, name="unnamed"):
         """Safely convert value to float with error reporting"""
         if value is None:
-            print(f"Warning: {name} is None, using default value {default}")
+            # print(f"Warning: {name} is None, using default value {default}")
             return default
         try:
             return float(value)
@@ -78,6 +78,9 @@ class DinoEnv(gym.Env):
         current_obs = self._get_observation()
         current_status = current_obs["status"]
         
+        # Track if action was actually performed
+        action_performed = False
+        
         if current_status == 2:
             self.is_jumping = True
         elif current_status == 1:
@@ -86,30 +89,34 @@ class DinoEnv(gym.Env):
         elif current_status == 3:
             self.is_ducking = True
 
-        if action == 1:
+        if action == 1:  # Jump
             if not self.is_ducking:
                 self.game.send_action("jump")
                 self.is_jumping = True
-        elif action == 2:
+                action_performed = True
+        elif action == 2:  # Duck
             if not self.is_jumping:
                 self.game.send_action("duck")
                 self.is_ducking = True
-        elif action == 3:
+                action_performed = True
+        elif action == 3:  # Fall
             if self.is_jumping:
                 self.game.send_action("fall")
                 self.is_jumping = False
-        elif action == 4:
+                action_performed = True
+        elif action == 4:  # Stand
             if self.is_ducking:
                 self.game.send_action("stand")
                 self.is_ducking = False
-        else:
+                action_performed = True
+        else:  # Run
             self.game.send_action("run")
 
-        # Small delay to allow game state to update
         time.sleep(0.05)
 
+        print(current_obs, action)
         observation = self._get_observation()
-        reward = self._compute_reward(observation)
+        reward = self._compute_reward(observation, action_performed)
         terminated = observation["status"] == 4
         truncated = False
         info = {}
@@ -165,15 +172,28 @@ class DinoEnv(gym.Env):
             "next_obstacle": next_obstacle
         }
 
-    def _compute_reward(self, observation: Dict[str, np.ndarray]) -> float:
+    def _compute_reward(self, observation: Dict[str, np.ndarray], action_performed: bool) -> float:
+        # Large negative reward for crashing
         if observation["status"] == 4:
-            return -100.0
-            
+            return -100.0  # Big penalty for crashing
+        
+        # Calculate distance reward
         current_distance = float(observation["distance"][0])
         distance_reward = current_distance - self.previous_distance
         self.previous_distance = current_distance
         
-        return float(distance_reward + 0.1)
+        # Base survival reward
+        survival_reward = 1.0 if observation["status"] != 4 else 0.0
+        
+        # Action penalty - adjust to a smaller value
+        action_penalty = -0.1 if action_performed else 0.0
+        
+        # Small penalty for being in non-running states (but not as severe)
+        state_penalty = -0.05 if observation["status"] != 1 else 0.0
+        
+        total_reward = distance_reward + survival_reward + action_penalty + state_penalty
+        
+        return float(total_reward)
 
     def close(self):
         if self.game:
