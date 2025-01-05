@@ -54,6 +54,7 @@ class DinoEnv(gym.Env):
         if self.statuses[current_status] == "CRASHED":
             reward = -100.0
             truncated = False
+            terminated = True
             print(f"Game over. Status: CRASHED, Reward: {reward}")
             return original_observation, reward, terminated, truncated, {}
 
@@ -64,9 +65,10 @@ class DinoEnv(gym.Env):
             reward = -5.0  # Penalty for illegal action
             
             print(f'Status: {self.statuses[current_status]} | Action: {action_str} | Reward: {reward} | Illegal action')
-            terminated = False
             truncated = False
             time.sleep(0.15) # sleep for a short duration to simulate action
+            new_observation = self._get_observation()
+            terminated = self.statuses[new_observation["status"]] == "CRASHED"
             return original_observation, reward, terminated, truncated, {}
 
         # Perform the action and get the new observation
