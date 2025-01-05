@@ -66,13 +66,13 @@ class DinoEnv(gym.Env):
             print(f'Status: {self.statuses[current_status]} | Action: {action_str} | Reward: {reward} | Illegal action')
             terminated = False
             truncated = False
-            time.sleep(0.25) # sleep for a short duration to simulate action
+            time.sleep(0.15) # sleep for a short duration to simulate action
             return original_observation, reward, terminated, truncated, {}
 
         # Perform the action and get the new observation
         self.game.send_action(action_str)
 
-        time.sleep(0.25) # sleep for a short duration to allow the action to take effect
+        time.sleep(0.15) # sleep for a short duration to allow the action to take effect
 
         new_observation = self._get_observation()
         reward = self._compute_reward(new_observation)
@@ -103,6 +103,7 @@ class DinoEnv(gym.Env):
         
         # Immediate penalty for crashing
         if observation["status"] == 4:
+            print(f"Game over. Status: CRASHED, Reward: {-100.0}")
             return -100.0  
 
         # Survival reward
