@@ -55,6 +55,7 @@ class DinoEnv(gym.Env):
             reward = -100.0
             terminated = True
             truncated = False
+            print(f"Game over. Status: CRASHED, Reward: {reward}")
             return original_observation, reward, terminated, truncated, {}
 
         # Check if the action is legal
@@ -70,6 +71,9 @@ class DinoEnv(gym.Env):
 
         # Perform the action and get the new observation
         self.game.send_action(action_str)
+
+        time.sleep(0.25) # sleep for a short duration to allow the action to take effect
+
         new_observation = self._get_observation()
         reward = self._compute_reward(new_observation)
         print(f'Status: {self.statuses[current_status]} | Action: {action_str} | Reward: {reward}')
