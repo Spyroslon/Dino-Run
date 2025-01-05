@@ -14,7 +14,6 @@ class DinoGame:
             self.page.goto('http://example.com')  # Trigger offline dinosaur game
         except:
             pass  # Expected since we're offline
-        time.sleep(1)
         self.page.keyboard.press('Space')  # Start the game
         time.sleep(1)
 
@@ -36,14 +35,19 @@ class DinoGame:
     def send_action(self, action):
         """Send a specified action to the game."""
         if action == "run":
+            print('Running')
             pass  # No action needed
         elif action == "jump":
+            print('Jumping')
             self.page.keyboard.press("Space")
         elif action == "fall":
+            print('Falling')
             self.page.keyboard.press("ArrowDown")
         elif action == "duck":
+            print('Ducking')
             self.page.evaluate("() => Runner.instance_.tRex.setDuck(true)")
         elif action == "stand":
+            print('Standing')
             self.page.evaluate("() => Runner.instance_.tRex.setDuck(false)")
 
     def close(self):
