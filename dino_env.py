@@ -2,6 +2,7 @@ import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
 from game import DinoGame
+import time
 
 class DinoEnv(gym.Env):
     def __init__(self):
@@ -61,16 +62,17 @@ class DinoEnv(gym.Env):
         if action_str not in self.legal_actions[current_status]:
             # Illegal action punishment
             reward = -10.0
-            print(f'Status: {self.statuses[current_status]} | Illegal action: {action_str}')
+            print(f'Status: {self.statuses[current_status]} | Action: {action_str} | Reward: {reward} | Illegal action')
             terminated = False
             truncated = False
+            time.sleep(0.25) # sleep for a short duration to simulate action
             return original_observation, reward, terminated, truncated, {}
 
-        print(f'Status: {self.statuses[current_status]} | Action: {action_str}')
         # Perform the action and get the new observation
         self.game.send_action(action_str)
         new_observation = self._get_observation()
         reward = self._compute_reward(new_observation)
+        print(f'Status: {self.statuses[current_status]} | Action: {action_str} | Reward: {reward}')
 
         # Check for termination after the action
         terminated = self.statuses[new_observation["status"]] == "CRASHED"
@@ -94,20 +96,81 @@ class DinoEnv(gym.Env):
         }
 
     def _compute_reward(self, observation):
-        # Base reward
-        reward = 1.0  # Survival reward
-
-        # Reward for increasing distance
+        reward = 0.0
+        
+        # Survival reward - small but consistent
+        reward += 0.5
+        
+        # Distance-based reward
         current_distance = float(observation["distance"][0])
-        reward += current_distance - self.previous_distance
+        distance_delta = current_distance - self.previous_distance
+        # Exponential reward for maintaining speed and progress
+        reward += np.exp(distance_delta / 100) - 1  # Normalized to prevent explosion
         self.previous_distance = current_distance
+        
+        # Speed-based reward to encourage maintaining momentum
+        current_speed = float(observation["speed"][0])
+        if current_speed > 6.0:  # Base running speed
+            reward += 0.3 * (current_speed / 10.0)  # Normalized speed reward
+            
+        # Obstacle avoidance rewards
+        obstacles = observation["obstacles"].reshape(-1, 4)
+        for obstacle in obstacles:
+            x_pos, y_pos, width, height = obstacle
+            if x_pos > 0:  # Only consider active obstacles
+                distance_to_obstacle = x_pos
+                # Reward for successfully passing obstacles
+                if 0 < distance_to_obstacle < 50:  # Close to obstacle
+                    if observation["status"] == 2 and height > 50:  # Jumping over tall obstacle
+                        reward += 10.0
+                    elif observation["status"] == 3 and height < 50:  # Ducking under low obstacle
+                        reward += 10.0
+                    elif observation["status"] == 1:  # Running past small obstacle
+                        reward += 5.0
+        
+        # State-based rewards
+        current_status = observation["status"]
+        if current_status == 1:  # RUNNING
+            reward += 1.0  # Base reward for normal running state
+        elif current_status == 2:  # JUMPING
+            # Reward based on jump timing
+            y_position = float(observation["y_position"][0])
+            if y_position > 100:  # Higher jumps for tall obstacles
+                reward += 2.0
+        elif current_status == 3:  # DUCKING
+            # Only reward ducking when there's a low obstacle nearby
+            if any(o[3] < 50 and 0 < o[0] < 200 for o in obstacles):  # height < 50 and nearby
+                reward += 2.0
+            else:
+                reward -= 0.5  # Small penalty for unnecessary ducking
+        elif current_status == 4:  # CRASHED
+            # Fixed crash penalty
+            reward = -50.0  # Significant but fixed penalty for crashing
+            
+        # Additional bonus for milestone distances
+        # This encourages the agent to strive for longer runs
+        if current_distance > self.current_score:
+            milestone_bonus = 5.0  # Bonus for reaching new high score
+            reward += milestone_bonus
+            self.current_score = current_distance
+            
+        return round(float(reward),2)
 
-        # Penalty for being in a non-running state
-        if self.statuses[observation["status"]] != "RUNNING":
-            reward -= 0.1
+    # def _compute_reward(self, observation):
+    #     # Base reward
+    #     reward = 1.0  # Survival reward
 
-        # Penalty for crashing
-        if self.statuses[observation["status"]] == "CRASHED":
-            reward = -100.0
+    #     # Reward for increasing distance
+    #     current_distance = float(observation["distance"][0])
+    #     reward += current_distance - self.previous_distance
+    #     self.previous_distance = current_distance
 
-        return float(reward)
+    #     # Penalty for being in a non-running state
+    #     if self.statuses[observation["status"]] != "RUNNING":
+    #         reward -= 0.1
+
+    #     # Penalty for crashing
+    #     if self.statuses[observation["status"]] == "CRASHED":
+    #         reward = -100.0
+
+    #     return float(reward)

@@ -86,7 +86,7 @@ class DinoGame:
             self.page.evaluate("() => Runner.instance_.tRex.setDuck(false)")
         else:
             print(f"Unknown action: {action}")
-        time.sleep(.5) # sleep for a short duration to allow the action to take effect
+        time.sleep(0.25) # sleep for a short duration to allow the action to take effect
 
     def close(self):
         """Close the browser session gracefully."""
