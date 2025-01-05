@@ -112,7 +112,7 @@ class DinoEnv(gym.Env):
         else:  # Run
             self.game.send_action("run")
 
-        time.sleep(0.05)
+        # time.sleep(0.001)
 
         print(current_obs, action)
         observation = self._get_observation()
@@ -186,10 +186,10 @@ class DinoEnv(gym.Env):
         survival_reward = 1.0 if observation["status"] != 4 else 0.0
         
         # Action penalty - adjust to a smaller value
-        action_penalty = -0.1 if action_performed else 0.0
+        action_penalty = -1 if action_performed else 0.0
         
         # Small penalty for being in non-running states (but not as severe)
-        state_penalty = -0.05 if observation["status"] != 1 else 0.0
+        state_penalty = -0.1 if observation["status"] != 1 else 0.0
         
         total_reward = distance_reward + survival_reward + action_penalty + state_penalty
         

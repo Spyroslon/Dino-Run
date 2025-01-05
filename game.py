@@ -4,7 +4,7 @@ from playwright.sync_api import sync_playwright
 class DinoGame:
     def __init__(self):
         self.playwright = sync_playwright().start()
-        self.browser = self.playwright.chromium.launch(headless=False)
+        self.browser = self.playwright.chromium.launch(headless=False, args=["--mute-audio"])
         self.context = self.browser.new_context(offline=True)
         self.page = self.context.new_page()
 
@@ -45,7 +45,7 @@ class DinoGame:
             pass  # No action needed
         elif action == "jump":
             print('Jumping')
-            self.page.keyboard.press("Space")
+            self.page.keyboard.press("ArrowUp")
         elif action == "fall":
             print('Falling')
             self.page.keyboard.press("ArrowDown")
