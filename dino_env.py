@@ -61,11 +61,12 @@ class DinoEnv(gym.Env):
         if action_str not in self.legal_actions[current_status]:
             # Illegal action punishment
             reward = -10.0
-            print(f'Illegal action: {action_str}')
+            print(f'Status: {current_status} | Illegal action: {action_str}')
             terminated = False
             truncated = False
             return original_observation, reward, terminated, truncated, {}
 
+        print(f'Status: {current_status} | Action: {action_str}')
         # Perform the action and get the new observation
         self.game.send_action(action_str)
         new_observation = self._get_observation()

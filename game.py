@@ -70,19 +70,19 @@ class DinoGame:
     def send_action(self, action):
         """Send a specified action to the game."""
         if action == "run":
-            print('Running')
+            # print('Running')
             pass  # No action needed for 'run'
         elif action == "jump":
-            print('Jumping')
+            # print('Jumping')
             self.page.keyboard.press("ArrowUp")
         elif action == "fall":
-            print('Falling')
+            # print('Falling')
             self.page.keyboard.press("ArrowDown")
         elif action == "duck":
-            print('Ducking')
+            # print('Ducking')
             self.page.evaluate("() => Runner.instance_.tRex.setDuck(true)")
         elif action == "stand":
-            print('Standing')
+            # print('Standing')
             self.page.evaluate("() => Runner.instance_.tRex.setDuck(false)")
         else:
             print(f"Unknown action: {action}")
