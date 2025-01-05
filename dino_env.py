@@ -53,16 +53,16 @@ class DinoEnv(gym.Env):
         # Check for early termination (crashed status before taking any action)
         if self.statuses[current_status] == "CRASHED":
             reward = -100.0
-            terminated = True
             truncated = False
             print(f"Game over. Status: CRASHED, Reward: {reward}")
             return original_observation, reward, terminated, truncated, {}
 
-        # Check if the action is legal
         action_str = ["run", "jump", "duck", "fall", "stand"][action]
+        
+        # Check if the action is legal
         if action_str not in self.legal_actions[current_status]:
-            # Illegal action punishment
-            reward = -10.0
+            reward = -10.0  # Penalty for illegal action
+            
             print(f'Status: {self.statuses[current_status]} | Action: {action_str} | Reward: {reward} | Illegal action')
             terminated = False
             truncated = False
@@ -75,11 +75,12 @@ class DinoEnv(gym.Env):
         time.sleep(0.15) # sleep for a short duration to allow the action to take effect
 
         new_observation = self._get_observation()
+        # Check for termination after the action
+        terminated = self.statuses[new_observation["status"]] == "CRASHED"
+
         reward = self._compute_reward(new_observation)
         print(f'Status: {self.statuses[current_status]} | Action: {action_str} | Reward: {reward}')
 
-        # Check for termination after the action
-        terminated = self.statuses[new_observation["status"]] == "CRASHED"
         truncated = False
 
         # Return the original observation (before the action)
