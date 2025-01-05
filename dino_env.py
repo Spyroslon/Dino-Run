@@ -31,7 +31,7 @@ class DinoEnv(gym.Env):
             0: ["jump"],
             1: ["run", "jump", "duck"],
             2: ["run", "fall"],
-            3: ["run", "stand"],
+            3: ["run", "duck", "stand"],
             4: []  # No legal actions when crashed
         }
 
