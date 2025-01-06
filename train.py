@@ -18,7 +18,7 @@ env = make_vec_env(make_logged_env, n_envs=1) # consider increasing this
 
 # Define a checkpoint callback to save models every 10,000 steps
 checkpoint_callback = CheckpointCallback(
-    save_freq=10000,
+    save_freq=20000,
     save_path="./checkpoints/",
     name_prefix="ppo_dino",
 )
@@ -30,7 +30,7 @@ model = PPO(
     verbose=1,
     learning_rate=1e-4,
     n_steps=4096,
-    batch_size=128, # see how much memory this uses and consider increasing it
+    batch_size=1024, # see how much memory this uses and consider increasing it
     tensorboard_log=None,
 )
 
