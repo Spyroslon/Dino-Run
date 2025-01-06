@@ -50,7 +50,7 @@ class DinoEnv(gym.Env):
         action_str = self.actions[action]
         self.game.send_action(action_str) # Perform the action and get the new observation
 
-        time.sleep(0.1) # sleep for a short duration to allow the action to take effect
+        time.sleep(0.05) # sleep for a short duration to allow the action to take effect
 
         new_observation = self._get_observation()
         self.current_distance = float(new_observation["distance"][0])
@@ -68,33 +68,37 @@ class DinoEnv(gym.Env):
     def _get_observation(self):
         state = self.game.get_game_state()
         if state is None:
-            return self.observation_space.sample()  # Handle edge case gracefully
+            return self.observation_space.sample()
 
         return {
             "status": state["status"],
-            "distance": np.array([state["distance"]], dtype=np.float32),
-            "speed": np.array([state["speed"] / 10.0], dtype=np.float32),
+            "distance": np.array([state["distance"] / 1000.0], dtype=np.float32),  # Normalize distance
+            "speed": np.array([state["speed"] / 10.0], dtype=np.float32),         # Normalize speed
             "jump_velocity": np.array([state["jump_velocity"] / 50.0], dtype=np.float32),
             "y_position": np.array([state["y_position"] / 100.0], dtype=np.float32),
             "obstacles": np.array(state["obstacles"], dtype=np.float32)
         }
 
     def _compute_reward(self, observation):
-        penalty_per_jump = -1.0
-        distance_reward_weight = 2.0
-        reward = 0.0
+        survival_reward = 10.0  # Base reward for staying alive
+        distance_reward_weight = 1.0
+        jump_penalty = -0.1
+        crash_penalty = -500.0
 
-        # Immediate penalty for crashing
-        if self.statuses[observation["status"]] == "CRASHED":
-            return -100.0
+        # Reward for survival
+        reward = survival_reward
 
-        # Distance reward with higher weight
+        # Reward for distance traveled
         current_distance = float(observation["distance"][0])
         reward += distance_reward_weight * (current_distance - self.previous_distance)
         self.previous_distance = current_distance
 
         # Penalty for jumping
         if self.statuses[observation["status"]] == "JUMPING":
-            reward -= penalty_per_jump
+            reward += jump_penalty
+
+        # Penalty for crashing
+        if self.statuses[observation["status"]] == "CRASHED":
+            reward += crash_penalty
 
         return round(reward, 2)
