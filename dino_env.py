@@ -5,7 +5,7 @@ from game import DinoGame
 import time
 
 class DinoEnv(gym.Env):
-    def __init__(self):
+    def __init__(self, logger=None):
         super().__init__()
         self.game = DinoGame()
 
@@ -24,8 +24,10 @@ class DinoEnv(gym.Env):
         })
         
         # Track game variables
-        self.current_score = 0
+        self.current_distance = 0.0
         self.previous_distance = 0
+        self.logger = logger  # Allow logger to be assigned dynamically
+        self.episode_count = 0
 
         self.statuses = {0: "WAITING", 1: "RUNNING", 2: "JUMPING", 3: "DUCKING", 4: "CRASHED"}
         self.legal_actions = {
@@ -39,23 +41,27 @@ class DinoEnv(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         self.game.start_game()
-        self.current_score = 0
-        self.previous_distance = 0
+        self.current_distance = 0.0  # Reset distance
+        self.previous_distance = 0.0
         observation = self._get_observation()
-        info = {}
-        return observation, info
+        return observation, {}
 
     def step(self, action):
         # Get the observation before performing the action
         original_observation = self._get_observation()
         current_status = original_observation["status"]
+        self.current_distance = original_observation["distance"]
+        terminated = self.statuses[original_observation["status"]] == "CRASHED"
 
         # Check for early termination (crashed status before taking any action)
-        if self.statuses[current_status] == "CRASHED":
+        if terminated:
             reward = -100.0
             truncated = False
-            terminated = True
+            self.episode_count += 1
             print(f"Game over. Status: CRASHED, Reward: {reward}")
+            if self.logger:  # Ensure logger is set
+                self.logger.record("rollout/ep_distance", self.current_distance)
+                self.logger.dump(step=self.episode_count)  # Ensure logs are written to TensorBoard
             return original_observation, reward, terminated, truncated, {}
 
         action_str = ["run", "jump", "duck", "fall", "stand"][action]
@@ -66,17 +72,24 @@ class DinoEnv(gym.Env):
             
             print(f'Status: {self.statuses[current_status]} | Action: {action_str} | Reward: {reward} | Illegal action')
             truncated = False
-            time.sleep(0.15) # sleep for a short duration to simulate action
+            time.sleep(0.1) # sleep for a short duration to simulate action
             new_observation = self._get_observation()
+            self.current_distance = float(new_observation["distance"][0])
             terminated = self.statuses[new_observation["status"]] == "CRASHED"
+            if terminated and self.logger:
+                self.episode_count += 1
+                self.logger.record("rollout/ep_distance", self.current_distance)
+                self.logger.dump(step=self.episode_count)  # Ensure logs are written to TensorBoard
             return original_observation, reward, terminated, truncated, {}
 
         # Perform the action and get the new observation
         self.game.send_action(action_str)
 
-        time.sleep(0.15) # sleep for a short duration to allow the action to take effect
+        time.sleep(0.1) # sleep for a short duration to allow the action to take effect
 
         new_observation = self._get_observation()
+        self.current_distance = float(new_observation["distance"][0])
+
         # Check for termination after the action
         terminated = self.statuses[new_observation["status"]] == "CRASHED"
 
@@ -84,6 +97,10 @@ class DinoEnv(gym.Env):
         print(f'Status: {self.statuses[current_status]} | Action: {action_str} | Reward: {reward}')
 
         truncated = False
+        if terminated and self.logger:
+            self.episode_count += 1
+            self.logger.record("rollout/ep_distance", self.current_distance)
+            self.logger.dump(step=self.episode_count)  # Ensure logs are written to TensorBoard
 
         # Return the original observation (before the action)
         return original_observation, reward, terminated, truncated, {}
@@ -95,7 +112,7 @@ class DinoEnv(gym.Env):
 
         return {
             "status": state["status"],
-            "distance": np.array([state["distance"] / 1000.0], dtype=np.float32),
+            "distance": np.array([state["distance"]], dtype=np.float32),
             "speed": np.array([state["speed"] / 10.0], dtype=np.float32),
             "jump_velocity": np.array([state["jump_velocity"] / 50.0], dtype=np.float32),
             "y_position": np.array([state["y_position"] / 100.0], dtype=np.float32),

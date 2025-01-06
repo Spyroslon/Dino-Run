@@ -23,6 +23,7 @@ class DinoGame:
     def get_game_state(self):
         """Fetch game state parameters."""
         try:
+            self.page.bring_to_front()  # Ensures the page stays in focus
             distance_str = self.page.evaluate("() => Runner.instance_.distanceMeter.digits.join('')")
             distance = float(distance_str) if distance_str != '' else 0.0
 
