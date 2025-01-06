@@ -31,8 +31,7 @@ class DinoGame:
                 'WAITING': 0,
                 'RUNNING': 1,
                 'JUMPING': 2,
-                'DUCKING': 3,
-                'CRASHED': 4
+                'CRASHED': 3
             }
             
             # Get obstacle details (xPos, yPos, width, height)
@@ -73,12 +72,6 @@ class DinoGame:
             pass  # No action needed for 'run'
         elif action == "jump":
             self.page.keyboard.press("ArrowUp")
-        elif action == "fall":
-            self.page.keyboard.press("ArrowDown")
-        elif action == "duck":
-            self.page.evaluate("() => Runner.instance_.tRex.setDuck(true)")
-        elif action == "stand":
-            self.page.evaluate("() => Runner.instance_.tRex.setDuck(false)")
         else:
             print(f"Unknown action: {action}")
 
