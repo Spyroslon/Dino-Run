@@ -80,24 +80,15 @@ class DinoEnv(gym.Env):
         }
 
     def _compute_reward(self, observation):
-        survival_reward = 10.0  # Base reward for staying alive
+        survival_reward = 5.0  # Encourage survival
         distance_reward_weight = 1.0
-        jump_penalty = -0.1
-        crash_penalty = -500.0
+        crash_penalty = -100.0
 
-        # Reward for survival
         reward = survival_reward
-
-        # Reward for distance traveled
         current_distance = float(observation["distance"][0])
         reward += distance_reward_weight * (current_distance - self.previous_distance)
         self.previous_distance = current_distance
 
-        # Penalty for jumping
-        if self.statuses[observation["status"]] == "JUMPING":
-            reward += jump_penalty
-
-        # Penalty for crashing
         if self.statuses[observation["status"]] == "CRASHED":
             reward += crash_penalty
 
