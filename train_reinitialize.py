@@ -8,7 +8,7 @@ def linear_schedule(initial_value):
     return scheduler
 
 # Load the trained model
-old_model = PPO.load("dino_model_ppo.zip")
+old_model = PPO.load("dino_model_ppo_reinitialized.zip")
 
 # Create a new environment
 env = DinoEnv()
@@ -41,7 +41,7 @@ model.policy.load_state_dict(old_model.policy.state_dict())
 checkpoint_callback = CheckpointCallback(
     save_freq=10000,
     save_path="./checkpoints/",
-    name_prefix="ppo_dino_reinitialized",
+    name_prefix="ppo_dino_reinitialized2",
 )
 
 # Train the model
@@ -52,7 +52,7 @@ model.learn(
 )
 
 # Save the updated model
-model.save("dino_model_ppo_reinitialized")
+model.save("dino_model_ppo_reinitialized2")
 
 # Close the environment
 env.close()
