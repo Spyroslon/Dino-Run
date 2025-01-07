@@ -16,9 +16,9 @@ env = DinoEnv()
 # Define new hyperparameters for exploration
 new_hyperparams = {
     "learning_rate": linear_schedule(5e-4),     # Slightly higher for better fine-tuning
-    "ent_coef": 0.01,                           # Encourage more exploration
-    "n_steps": 1024,                            # Moderate steps for frequent updates
-    "batch_size": 256,                          # Ensure batch size aligns with n_steps
+    "ent_coef": 0.02,                           # Encourage more exploration
+    "n_steps": 2048,                            # Moderate steps for frequent updates
+    "batch_size": 512,                          # Ensure batch size aligns with n_steps
 }
 
 # Initialize a new model with updated hyperparameters but reuse the policy
@@ -39,14 +39,14 @@ model.policy.load_state_dict(old_model.policy.state_dict())
 
 # Define a checkpoint callback to save progress
 checkpoint_callback = CheckpointCallback(
-    save_freq=10000,
+    save_freq=20000,
     save_path="./checkpoints/",
     name_prefix="ppo_dino_reinitialized3",
 )
 
 # Train the model
 model.learn(
-    total_timesteps=100000,  # Train for more steps
+    total_timesteps=200000,  # Train for more steps
     callback=checkpoint_callback,
     reset_num_timesteps=True,  # Start new step count for clarity
 )
