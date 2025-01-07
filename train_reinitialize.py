@@ -8,17 +8,17 @@ def linear_schedule(initial_value):
     return scheduler
 
 # Load the trained model
-old_model = PPO.load("dino_model_ppo_reinitialized.zip")
+old_model = PPO.load("dino_model_ppo_reinitialized2.zip")
 
 # Create a new environment
 env = DinoEnv()
 
 # Define new hyperparameters for exploration
 new_hyperparams = {
-    "learning_rate": linear_schedule(5e-4),  # Slightly higher for better fine-tuning
-    "ent_coef": 0.01,       # Encourage more exploration
-    "n_steps": 1024,        # Moderate steps for frequent updates
-    "batch_size": 256,      # Ensure batch size aligns with n_steps
+    "learning_rate": linear_schedule(5e-4),     # Slightly higher for better fine-tuning
+    "ent_coef": 0.01,                           # Encourage more exploration
+    "n_steps": 1024,                            # Moderate steps for frequent updates
+    "batch_size": 256,                          # Ensure batch size aligns with n_steps
 }
 
 # Initialize a new model with updated hyperparameters but reuse the policy
@@ -41,7 +41,7 @@ model.policy.load_state_dict(old_model.policy.state_dict())
 checkpoint_callback = CheckpointCallback(
     save_freq=10000,
     save_path="./checkpoints/",
-    name_prefix="ppo_dino_reinitialized2",
+    name_prefix="ppo_dino_reinitialized3",
 )
 
 # Train the model
@@ -52,7 +52,7 @@ model.learn(
 )
 
 # Save the updated model
-model.save("dino_model_ppo_reinitialized2")
+model.save("dino_model_ppo_reinitialized3")
 
 # Close the environment
 env.close()
