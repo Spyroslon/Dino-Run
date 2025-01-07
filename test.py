@@ -3,19 +3,28 @@ from dino_env import DinoEnv
 
 # Load the environment and trained model
 env = DinoEnv()
-model = PPO.load("dino_model")
+model = PPO.load("dino_model_ppo.zip")
 
 # Test the model
-obs = env.reset()
-done = False
-total_reward = 0
+obs, _ = env.reset()
 
-while not done:
-    action, _ = model.predict(obs, deterministic=True)
-    obs, reward, done, info = env.step(action)
-    print(f"Action: {action}, Reward: {reward}")
-    total_reward += reward
+# Run the model in the environment
+num_episodes = 0
+max_episodes = 10  # Maximum number of episodes to run
 
-print(f"Total Reward: {total_reward}")
+while num_episodes < max_episodes:
+    # Predict action using the trained model
+    action, _states = model.predict(obs, deterministic=True)
 
+    # Step through the environment with the chosen action
+    obs, reward, done, truncated, info = env.step(action)
+
+    # If the episode ends, reset the environment
+    if done:
+        num_episodes += 1
+        print("Episode finished.")
+        print(f'Episode: {num_episodes}, Distance: {obs["distance"][0]*1000}')
+        obs, _ = env.reset()
+
+# Close the environment after testing
 env.close()
