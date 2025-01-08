@@ -39,14 +39,14 @@ model.policy.load_state_dict(old_model.policy.state_dict())
 
 # Define a checkpoint callback to save progress
 checkpoint_callback = CheckpointCallback(
-    save_freq=20000,
+    save_freq=25000,
     save_path="./checkpoints/",
     name_prefix="ppo_dino_reinitialized3",
 )
 
 # Train the model
 model.learn(
-    total_timesteps=200000,  # Train for more steps
+    total_timesteps=300000,  # Train for more steps
     callback=checkpoint_callback,
     reset_num_timesteps=True,  # Start new step count for clarity
 )
