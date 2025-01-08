@@ -3,7 +3,7 @@ from dino_env import DinoEnv
 
 # Load the environment and trained model
 env = DinoEnv()
-model = PPO.load("dino_model_ppo_reinitialized.zip")
+model = PPO.load("ppo_dino_continuing_100000_steps.zip")
 
 # Test the model
 obs, _ = env.reset()
