@@ -50,7 +50,7 @@ class DinoEnv(gym.Env):
         action_str = self.actions[action]
         self.game.send_action(action_str) # Perform the action and get the new observation
 
-        time.sleep(0.025) # sleep for a short duration to allow the action to take effect
+        # time.sleep(0.025) # sleep for a short duration to allow the action to take effect
 
         new_observation = self._get_observation()
         self.current_distance = float(new_observation["distance"][0])

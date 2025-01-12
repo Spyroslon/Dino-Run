@@ -69,9 +69,13 @@ class DinoGame:
     def send_action(self, action):
         """Send a specified action to the game."""
         if action == "run":
+            time.sleep(0.025)  # Sleep to match jumping delay
             pass  # No action needed for 'run'
         elif action == "jump":
-            self.page.keyboard.press("ArrowUp")
+            # self.page.keyboard.press("ArrowUp")
+            self.page.keyboard.down("ArrowUp")
+            time.sleep(0.025)  # Adjusted delay for consitent jumping
+            self.page.keyboard.up("ArrowUp")
         else:
             print(f"Unknown action: {action}")
 
