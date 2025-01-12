@@ -50,7 +50,7 @@ class DinoEnv(gym.Env):
         action_str = self.actions[action]
         self.game.send_action(action_str) # Perform the action and get the new observation
 
-        time.sleep(0.05) # sleep for a short duration to allow the action to take effect
+        time.sleep(0.025) # sleep for a short duration to allow the action to take effect
 
         new_observation = self._get_observation()
         self.current_distance = float(new_observation["distance"][0])
@@ -61,6 +61,9 @@ class DinoEnv(gym.Env):
         terminated = self.statuses[new_observation["status"]] == "CRASHED"
 
         print(f'Status: {self.statuses[current_status]} | Action: {action_str} | Reward: {reward}')
+
+        if terminated:
+            print(f"Game over! Total distance: {round(self.current_distance*1000)}")
 
         # Return the original observation (before the action)
         return original_observation, reward, terminated, False, {}
@@ -81,16 +84,10 @@ class DinoEnv(gym.Env):
 
     def _compute_reward(self, observation):
         running_survival_reward = 5.0
-        distance_reward_weight = 1.0
-
-        jumping_penalty = -5.0
+        jumping_penalty = -1.0
         crash_penalty = -100.0
 
         reward = running_survival_reward
-        current_distance = float(observation["distance"][0])
-        reward += distance_reward_weight * (current_distance - self.previous_distance)
-
-        self.previous_distance = current_distance
 
         if self.statuses[observation["status"]] == "JUMPING":
             reward = jumping_penalty

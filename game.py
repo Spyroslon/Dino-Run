@@ -20,9 +20,6 @@ class DinoGame:
         self.page.keyboard.press('Space')  # Start the game
         time.sleep(1)
 
-        # Increase game speed
-        # self.page.evaluate("() => Runner.instance_.setSpeed(Runner.instance_.currentSpeed * 2)")
-
     def get_game_state(self):
         """Fetch game state parameters."""
         try:
