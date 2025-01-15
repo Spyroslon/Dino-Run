@@ -18,17 +18,17 @@ class DinoEnv(gym.Env):
         self.observation_space = spaces.Dict({
             "status": spaces.Discrete(4),
             "distance": spaces.Box(low=0, high=1e6, shape=(1,), dtype=np.float32),
-            "speed": spaces.Box(low=0, high=100.0, shape=(1,), dtype=np.float32),
+            "speed": spaces.Box(low=6, high=100.0, shape=(1,), dtype=np.float32),
             "jump_velocity": spaces.Box(low=-50.0, high=50.0, shape=(1,), dtype=np.float32),
-            "y_position": spaces.Box(low=0, high=200.0, shape=(1,), dtype=np.float32),
+            "y_position": spaces.Box(low=0, high=100.0, shape=(1,), dtype=np.float32),
             "obstacles": spaces.Box(low=-100, high=1000.0, shape=(self.max_obstacles * 4,), dtype=np.float32)
         })
-        
+
         # Track game variables
         self.current_distance = 0.0
         self.previous_distance = 0
         self.episode_count = 0
-        
+
         self.actions = ["run", "jump"]
         self.statuses = {0: "WAITING", 1: "RUNNING", 2: "JUMPING", 3: "CRASHED"}
 
@@ -42,10 +42,10 @@ class DinoEnv(gym.Env):
 
     def step(self, action):
         # Get the observation before performing the action
-        original_observation = self._get_observation()
+        # original_observation = self._get_observation()
 
-        current_status = original_observation["status"]
-        terminated = self.statuses[original_observation["status"]] == "CRASHED"
+        # current_status = original_observation["status"]
+        # terminated = self.statuses[original_observation["status"]] == "CRASHED"
 
         action_str = self.actions[action]
         self.game.send_action(action_str) # Perform the action and get the new observation
@@ -53,6 +53,8 @@ class DinoEnv(gym.Env):
         # time.sleep(0.025) # sleep for a short duration to allow the action to take effect
 
         new_observation = self._get_observation()
+        current_status = new_observation["status"]
+
         self.current_distance = float(new_observation["distance"][0])
 
         reward = self._compute_reward(new_observation)
@@ -66,7 +68,7 @@ class DinoEnv(gym.Env):
             print(f"Game over! Total distance: {round(self.current_distance*1000)}")
 
         # Return the original observation (before the action)
-        return original_observation, reward, terminated, False, {}
+        return new_observation, reward, terminated, False, {}
 
     def _get_observation(self):
         state = self.game.get_game_state()

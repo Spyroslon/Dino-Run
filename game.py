@@ -18,6 +18,7 @@ class DinoGame:
         print('Starting game')
         time.sleep(.5)
         self.page.keyboard.press('Space')  # Start the game
+        # self.page.evaluate("() => Runner.config.ACCELERATION=0") # Removing acceleration
         time.sleep(1)
 
     def get_game_state(self):
@@ -54,11 +55,12 @@ class DinoGame:
             state = {
                 "status": status_map[self.page.evaluate("() => Runner.instance_.tRex.status")],
                 "distance": distance,
-                "speed": float(self.page.evaluate("() => Runner.instance_.currentSpeed")),
-                "jump_velocity": float(self.page.evaluate("() => Runner.instance_.tRex.jumpVelocity")),
-                "y_position": float(self.page.evaluate("() => Runner.instance_.tRex.yPos")),
+                "speed": round(float(self.page.evaluate("() => Runner.instance_.currentSpeed")),2),
+                "jump_velocity": round(float(self.page.evaluate("() => Runner.instance_.tRex.jumpVelocity")),2),
+                "y_position": round(float(self.page.evaluate("() => Runner.instance_.tRex.yPos")),2),
                 "obstacles": obstacles_features
             }
+            # print(state)
 
             return state
 
