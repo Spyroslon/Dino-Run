@@ -3,7 +3,7 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 from dino_env import DinoEnv
 
 # Load the trained model
-model = PPO.load("ppo_3_dino_extended_400000_steps.zip")
+model = PPO.load("ppo_3_dino_extended_600000_steps.zip")
 
 # Create a new environment for training
 env = DinoEnv()
@@ -24,7 +24,7 @@ model.learn(
 )
 
 # Save the updated model
-model.save("ppo_3_dino_extended_600000_steps")
+model.save("ppo_3_dino_extended_800000_steps")
 
 # Close the environment
 env.close()
