@@ -68,15 +68,23 @@ class DinoGame:
             print(f"Error fetching game state: {e}")
             return None
 
+    def precise_sleep(self, duration):
+        """Use perf_counter for more precise sleep duration."""
+        start = time.perf_counter()
+        while time.perf_counter() - start < duration:
+            pass
+
     def send_action(self, action):
         """Send a specified action to the game."""
         if action == "run":
-            time.sleep(0.125)  # Sleep to match jumping delay
+            # time.sleep(0.125) # Sleep to match jumping delay
+            game.precise_sleep(0.125) # Adjusted delay for consitent jumping
             pass  # No action needed for 'run'
         elif action == "jump":
             # self.page.keyboard.press("ArrowUp")
             self.page.keyboard.down("ArrowUp")
-            time.sleep(0.125)  # Adjusted delay for consitent jumping
+            # time.sleep(0.125) # Adjusted delay for consitent jumping
+            game.precise_sleep(0.13) # Adjusted delay for consitent jumping
             self.page.keyboard.up("ArrowUp")
         else:
             print(f"Unknown action: {action}")
@@ -85,3 +93,8 @@ class DinoGame:
         """Close the browser session gracefully."""
         self.browser.close()
         self.playwright.stop()
+
+game = DinoGame()
+game.start_game()
+while True:
+    game.send_action("jump")
