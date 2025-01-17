@@ -84,7 +84,7 @@ class DinoGame:
             # self.page.keyboard.press("ArrowUp")
             self.page.keyboard.down("ArrowUp")
             # time.sleep(0.125) # Adjusted delay for consitent jumping
-            game.precise_sleep(0.13) # Adjusted delay for consitent jumping
+            game.precise_sleep(0.125) # Adjusted delay for consitent jumping
             self.page.keyboard.up("ArrowUp")
         else:
             print(f"Unknown action: {action}")
