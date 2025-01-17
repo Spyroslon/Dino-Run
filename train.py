@@ -15,7 +15,7 @@ env = make_vec_env(DinoEnv, n_envs=1)
 checkpoint_callback = CheckpointCallback(
     save_freq=20000,
     save_path="./checkpoints/",
-    name_prefix="ppo_2_dino",
+    name_prefix="ppo_3_dino",
 )
 
 # Initialize the PPO model with updated parameters

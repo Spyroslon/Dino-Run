@@ -4,7 +4,13 @@ from playwright.sync_api import sync_playwright
 class DinoGame:
     def __init__(self):
         self.playwright = sync_playwright().start()
-        self.browser = self.playwright.chromium.launch(headless=False, args=["--mute-audio"])
+        self.browser = self.playwright.chromium.launch(headless=False,
+                                                        args=[
+                                                            "--no-sandbox",           # Disable sandboxing for performance
+                                                            "--disable-dev-shm-usage",# Use RAM instead of shared memory
+                                                            "--disable-extensions",   # Disable extensions
+                                                            "--mute-audio",           # Disable sound
+                                                        ])
         self.context = self.browser.new_context(offline=True)
         self.page = self.context.new_page()
         self.max_obstacles = 3
@@ -18,7 +24,6 @@ class DinoGame:
         print('Starting game')
         time.sleep(.5)
         self.page.keyboard.press('Space')  # Start the game
-        # self.page.evaluate("() => Runner.config.ACCELERATION=0") # Removing acceleration
         time.sleep(1)
 
     def get_game_state(self):
@@ -78,13 +83,13 @@ class DinoGame:
         """Send a specified action to the game."""
         if action == "run":
             # time.sleep(0.125) # Sleep to match jumping delay
-            game.precise_sleep(0.125) # Adjusted delay for consitent jumping
+            self.precise_sleep(0.125) # Adjusted delay for consitent jumping
             pass  # No action needed for 'run'
         elif action == "jump":
             # self.page.keyboard.press("ArrowUp")
             self.page.keyboard.down("ArrowUp")
             # time.sleep(0.125) # Adjusted delay for consitent jumping
-            game.precise_sleep(0.125) # Adjusted delay for consitent jumping
+            self.precise_sleep(0.125) # Adjusted delay for consitent jumping
             self.page.keyboard.up("ArrowUp")
         else:
             print(f"Unknown action: {action}")
@@ -93,8 +98,3 @@ class DinoGame:
         """Close the browser session gracefully."""
         self.browser.close()
         self.playwright.stop()
-
-game = DinoGame()
-game.start_game()
-while True:
-    game.send_action("jump")

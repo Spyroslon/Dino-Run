@@ -8,7 +8,7 @@ def linear_schedule(initial_value):
     return scheduler
 
 # Load the trained model
-old_model = PPO.load("ppo_3_dino_extended_600000_steps.zip")
+old_model = PPO.load("ppo_4_dino_400000_steps.zip")
 
 # Create a new environment
 env = DinoEnv()
@@ -41,18 +41,18 @@ model.policy.load_state_dict(old_model.policy.state_dict())
 checkpoint_callback = CheckpointCallback(
     save_freq=20000,
     save_path="./checkpoints/",
-    name_prefix="ppo_4_dino",
+    name_prefix="ppo_5_dino",
 )
 
 # Train the model
 model.learn(
-    total_timesteps=200000,  # Train for more steps
+    total_timesteps=300000,  # Train for more steps
     callback=checkpoint_callback,
     reset_num_timesteps=True,  # Start new step count for clarity
 )
 
 # Save the updated model
-model.save("ppo_4_dino_200000_steps")
+model.save("ppo_5_dino_200000_steps")
 
 # Close the environment
 env.close()

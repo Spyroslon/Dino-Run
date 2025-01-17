@@ -26,13 +26,20 @@ class DinoEnv(gym.Env):
 
         # Track game variables
         self.current_distance = 0.0
-        self.previous_distance = 0
         self.episode_count = 0
 
         self.actions = ["run", "jump"]
         self.statuses = {0: "WAITING", 1: "RUNNING", 2: "JUMPING", 3: "CRASHED"}
 
     def reset(self, seed=None, options=None):
+        self.episode_count += 1
+
+        # Restarting Chromium every 100 episodes
+        if self.episode_count % 100 == 0:
+            print("Restarting browser to prevent lag...")
+            self.game.close()
+            self.game = DinoGame()  # Reinitialize the game
+
         super().reset(seed=seed)
         self.game.start_game()
         self.current_distance = 0.0
