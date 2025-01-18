@@ -24,7 +24,9 @@ model.learn(
 )
 
 # Save the updated model
-model.save("ppo_4_dino_400000_steps")
+model.save("ppo_4_dino_1000000_steps")
 
 # Close the environment
 env.close()
+
+print('Best distance:', env.best_distance)

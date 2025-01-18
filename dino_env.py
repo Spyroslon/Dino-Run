@@ -26,6 +26,7 @@ class DinoEnv(gym.Env):
 
         # Track game variables
         self.current_distance = 0.0
+        self.best_distance = 0.0
         self.episode_count = 0
 
         self.actions = ["run", "jump"]
@@ -72,7 +73,11 @@ class DinoEnv(gym.Env):
         print(f'Status: {self.statuses[current_status]} | Action: {action_str} | Reward: {reward}')
 
         if terminated:
-            print(f"Game over! Total distance: {round(self.current_distance*1000)}")
+            distance = round(self.current_distance*1000)
+            print(f"Game over! Total distance: {distance}")
+            if distance > self.best_distance:
+                self.best_distance = distance
+                print(f"New high score: {distance}")
 
         # Return the original observation (before the action)
         return new_observation, reward, terminated, False, {}

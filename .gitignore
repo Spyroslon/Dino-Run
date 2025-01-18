@@ -8,3 +8,4 @@ __pycache__/
 *tensorboard*
 checkpoints*
 *.zip
+!*ppo_4_dino_280000_steps.zip

@@ -15,7 +15,7 @@ env = make_vec_env(DinoEnv, n_envs=1)
 checkpoint_callback = CheckpointCallback(
     save_freq=20000,
     save_path="./checkpoints/",
-    name_prefix="ppo_3_dino",
+    name_prefix="ppo_5_dino",
 )
 
 # Initialize the PPO model with updated parameters
@@ -34,7 +34,7 @@ model = PPO(
 model.learn(total_timesteps=300000, callback=checkpoint_callback)
 
 # Save the final model
-model.save("dino_model_ppo_2_final")
+model.save("dino_model_ppo_5_final")
 
 # Close the environment
 env.close()
