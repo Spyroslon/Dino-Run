@@ -2,7 +2,15 @@ import time
 from playwright.sync_api import sync_playwright
 
 class DinoGame:
-    def __init__(self):
+    STATUS_MAP = {
+        'WAITING': 0,
+        'RUNNING': 1,
+        'JUMPING': 2,
+        'CRASHED': 3
+    }
+
+    def __init__(self, verbose=False):
+        self.verbose = verbose
         self.playwright = sync_playwright().start()
         self.browser = self.playwright.chromium.launch(headless=False,
                                                         args=[
@@ -21,10 +29,18 @@ class DinoGame:
             self.page.goto('https://github.com/Spyroslon')  # Trigger offline dinosaur game
         except:
             pass  # Expected since we're offline
-        print('Starting game')
-        time.sleep(.5)
+        if self.verbose:
+            print('Starting game')
+        # Wait for the tRex to be present (robust)
+        for _ in range(20):
+            try:
+                if self.page.evaluate("() => !!Runner.instance_ && !!Runner.instance_.tRex"):
+                    break
+            except:
+                pass
+            time.sleep(0.1)
         self.page.keyboard.press('Space')  # Start the game
-        time.sleep(1)
+        time.sleep(0.5)
 
     def get_game_state(self):
         """Fetch game state parameters."""
@@ -33,12 +49,7 @@ class DinoGame:
             distance_str = self.page.evaluate("() => Runner.instance_.distanceMeter.digits.join('')")
             distance = float(distance_str) if distance_str != '' else 0.0
 
-            status_map = {
-                'WAITING': 0,
-                'RUNNING': 1,
-                'JUMPING': 2,
-                'CRASHED': 3
-            }
+            status_map = self.STATUS_MAP
             
             # Get obstacle details (xPos, yPos, width, height)
             obstacles = self.page.evaluate("""
@@ -70,29 +81,36 @@ class DinoGame:
             return state
 
         except Exception as e:
-            print(f"Error fetching game state: {e}")
+            if getattr(self, "verbose", False):
+                print(f"Error fetching game state: {e}")
             return None
 
     def precise_sleep(self, duration):
         """Use perf_counter for more precise sleep duration."""
-        start = time.perf_counter()
-        while time.perf_counter() - start < duration:
-            pass
+        if duration > 0.01:
+            time.sleep(duration)
+        else:
+            start = time.perf_counter()
+            while time.perf_counter() - start < duration:
+                pass
 
     def send_action(self, action):
         """Send a specified action to the game."""
-        if action == "run":
-            # time.sleep(0.125) # Sleep to match jumping delay
-            self.precise_sleep(0.125) # Adjusted delay for consitent jumping
-            pass  # No action needed for 'run'
-        elif action == "jump":
-            # self.page.keyboard.press("ArrowUp")
-            self.page.keyboard.down("ArrowUp")
-            # time.sleep(0.125) # Adjusted delay for consitent jumping
-            self.precise_sleep(0.125) # Adjusted delay for consitent jumping
-            self.page.keyboard.up("ArrowUp")
-        else:
-            print(f"Unknown action: {action}")
+        try:
+            status = self.page.evaluate("() => Runner.instance_.tRex.status")
+            if action == "run":
+                pass  # No action needed
+            elif action == "jump":
+                if status == "RUNNING":  # Only jump if on ground
+                    self.page.keyboard.down("ArrowUp")
+                    self.precise_sleep(0.12)  # Fixed duration for consistent jump height
+                    self.page.keyboard.up("ArrowUp")
+            else:
+                pass
+        except Exception as e:
+            if getattr(self, "verbose", False):
+                print(f"Error in send_action: {e}")
+            raise
 
     def close(self):
         """Close the browser session gracefully."""
