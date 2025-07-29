@@ -1,11 +1,17 @@
+# Virtual environments
 .venv
-venv
-saved_models
-*.pyc
-*.pyo
+
+# Python bytecode
 __pycache__/
 *.py[cod]
-*tensorboard*
+*.pyc
+*.pyo
+
+# Model and checkpoint files
+saved_models/
 checkpoints*
+*tensorboard*
+
+# Archives
 *.zip
-!*ppo_4_dino_280000_steps.zip
+!ppo_4_dino_280000_steps.zip
