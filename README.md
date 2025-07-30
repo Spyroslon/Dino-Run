@@ -52,6 +52,10 @@ playwright install chromium
 - All code and environment logic is in Python; no browser automation scripting needed.
 - **Parallel training is not supported due to Playwright limitations. Use only one environment (n_envs=1).**
 
+## Headless Mode Setup
+
+Download the Dino Game Clone (<https://github.com/wayou/t-rex-runner>) and put it in the project folder as `t-rex-runner/`.
+
 ## Files
 
 - `train.py` – Train from scratch

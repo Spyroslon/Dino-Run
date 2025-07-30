@@ -1,5 +1,8 @@
 import time
 from playwright.sync_api import sync_playwright
+import threading
+from http.server import HTTPServer, SimpleHTTPRequestHandler
+import os
 
 class DinoGame:
     STATUS_MAP = {
@@ -11,24 +14,33 @@ class DinoGame:
 
     def __init__(self, verbose=False):
         self.verbose = verbose
+        self.server_thread = None
+        self._start_dino_server()
         self.playwright = sync_playwright().start()
-        self.browser = self.playwright.chromium.launch(headless=False,
+        self.browser = self.playwright.chromium.launch(headless=True,
                                                         args=[
                                                             "--no-sandbox",           # Disable sandboxing for performance
                                                             "--disable-dev-shm-usage",# Use RAM instead of shared memory
                                                             "--disable-extensions",   # Disable extensions
                                                             "--mute-audio",           # Disable sound
                                                         ])
-        self.context = self.browser.new_context(offline=True)
+        self.context = self.browser.new_context()  # Removed offline=True
         self.page = self.context.new_page()
         self.max_obstacles = 3
 
+    def _start_dino_server(self):
+        """Start a local HTTP server to serve the Dino game."""
+        web_dir = os.path.join(os.path.dirname(__file__), 't-rex-runner')
+        handler = lambda *args, **kwargs: SimpleHTTPRequestHandler(*args, directory=web_dir, **kwargs)
+        server = HTTPServer(("localhost", 8000), handler)
+        self.server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+        self.server_thread.start()
+        if self.verbose:
+            print("Started Dino game server at http://localhost:8000")
+
     def start_game(self):
         """Navigate to the Dino game and start it."""
-        try:
-            self.page.goto('https://github.com/Spyroslon')  # Trigger offline dinosaur game
-        except:
-            pass  # Expected since we're offline
+        self.page.goto('http://localhost:8000')  # Use local server
         if self.verbose:
             print('Starting game')
         # Wait for the tRex to be present (robust)
