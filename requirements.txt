@@ -1,6 +1,6 @@
 # RL environment and agent
 gymnasium==0.29.1
-stable-baselines3==2.2.1
+stable-baselines3[extra]==2.2.1
 
 # Game automation
 playwright==1.41.0
