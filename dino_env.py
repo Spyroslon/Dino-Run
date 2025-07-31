@@ -10,12 +10,13 @@ class DinoEnv(gym.Env):
     Gymnasium environment for Chrome Dino game using Playwright automation.
     Handles async game logic and provides RL-friendly API.
     """
-    def __init__(self, verbose=False, max_steps=1000):
+    def __init__(self, verbose=False, max_steps=1000, headless=True):
         start_dino_server()
         super().__init__()
         self.verbose = verbose
         self.max_steps = max_steps
-        self.browser = get_browser()
+        self.headless = headless
+        self.browser = get_browser(headless=headless)
         self.game = DinoGame(self.browser, verbose=verbose)
         self._run_async(self.game.init())
 

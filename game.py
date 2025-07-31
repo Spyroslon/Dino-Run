@@ -9,6 +9,7 @@ import asyncio
 _shared_browser = None
 _shared_playwright = None
 _server_started = False
+_shared_browser_headless = None
 
 def start_dino_server():
     """Start the local HTTP server for the Dino game if not already running."""
@@ -21,23 +22,27 @@ def start_dino_server():
         thread.start()
         _server_started = True
 
-async def _get_shared_browser():
+async def _get_shared_browser(headless=True):
     """Get or create a shared Playwright browser instance."""
-    global _shared_browser, _shared_playwright
-    if _shared_browser is None:
+    global _shared_browser, _shared_playwright, _shared_browser_headless
+    if _shared_browser is None or _shared_browser_headless != headless:
+        if _shared_playwright is not None and _shared_browser is not None:
+            await _shared_browser.close()
+            await _shared_playwright.stop()
         _shared_playwright = await async_playwright().start()
-        _shared_browser = await _shared_playwright.chromium.launch(headless=True, args=[
+        _shared_browser = await _shared_playwright.chromium.launch(headless=headless, args=[
             "--no-sandbox",
             "--disable-dev-shm-usage",
             "--disable-extensions",
             "--mute-audio",
         ])
+        _shared_browser_headless = headless
     return _shared_browser
 
-def get_browser():
+def get_browser(headless=True):
     """Synchronously get the shared browser instance."""
     loop = asyncio.get_event_loop()
-    return loop.run_until_complete(_get_shared_browser())
+    return loop.run_until_complete(_get_shared_browser(headless=headless))
 
 class DinoGame:
     """
