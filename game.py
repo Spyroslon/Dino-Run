@@ -1,10 +1,49 @@
 import time
-from playwright.sync_api import sync_playwright
+from playwright.async_api import async_playwright
 import threading
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import os
+import asyncio
+
+# --- Shared infrastructure ---
+_shared_browser = None
+_shared_playwright = None
+_server_started = False
+
+def start_dino_server():
+    """Start the local HTTP server for the Dino game if not already running."""
+    global _server_started
+    if not _server_started:
+        web_dir = os.path.join(os.path.dirname(__file__), 't-rex-runner')
+        handler = lambda *args, **kwargs: SimpleHTTPRequestHandler(*args, directory=web_dir, **kwargs)
+        server = HTTPServer(("localhost", 8000), handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        _server_started = True
+
+async def _get_shared_browser():
+    """Get or create a shared Playwright browser instance."""
+    global _shared_browser, _shared_playwright
+    if _shared_browser is None:
+        _shared_playwright = await async_playwright().start()
+        _shared_browser = await _shared_playwright.chromium.launch(headless=True, args=[
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-extensions",
+            "--mute-audio",
+        ])
+    return _shared_browser
+
+def get_browser():
+    """Synchronously get the shared browser instance."""
+    loop = asyncio.get_event_loop()
+    return loop.run_until_complete(_get_shared_browser())
 
 class DinoGame:
+    """
+    Playwright automation for the Chrome Dino game.
+    Handles game state, actions, and browser context.
+    """
     STATUS_MAP = {
         'WAITING': 0,
         'RUNNING': 1,
@@ -12,59 +51,38 @@ class DinoGame:
         'CRASHED': 3
     }
 
-    def __init__(self, verbose=False):
+    def __init__(self, browser, verbose=False):
         self.verbose = verbose
-        self.server_thread = None
-        self._start_dino_server()
-        self.playwright = sync_playwright().start()
-        self.browser = self.playwright.chromium.launch(headless=True,
-                                                        args=[
-                                                            "--no-sandbox",           # Disable sandboxing for performance
-                                                            "--disable-dev-shm-usage",# Use RAM instead of shared memory
-                                                            "--disable-extensions",   # Disable extensions
-                                                            "--mute-audio",           # Disable sound
-                                                        ])
-        self.context = self.browser.new_context()  # Removed offline=True
-        self.page = self.context.new_page()
         self.max_obstacles = 3
+        self.context = None
+        self.page = None
+        self.browser = browser
 
-    def _start_dino_server(self):
-        """Start a local HTTP server to serve the Dino game."""
-        web_dir = os.path.join(os.path.dirname(__file__), 't-rex-runner')
-        handler = lambda *args, **kwargs: SimpleHTTPRequestHandler(*args, directory=web_dir, **kwargs)
-        server = HTTPServer(("localhost", 8000), handler)
-        self.server_thread = threading.Thread(target=server.serve_forever, daemon=True)
-        self.server_thread.start()
-        if self.verbose:
-            print("Started Dino game server at http://localhost:8000")
+    async def init(self):
+        self.context = await self.browser.new_context()
+        self.page = await self.context.new_page()
 
-    def start_game(self):
-        """Navigate to the Dino game and start it."""
-        self.page.goto('http://localhost:8000')  # Use local server
+    async def start_game(self):
+        await self.page.goto('http://localhost:8000')
         if self.verbose:
             print('Starting game')
-        # Wait for the tRex to be present (robust)
         for _ in range(20):
             try:
-                if self.page.evaluate("() => !!Runner.instance_ && !!Runner.instance_.tRex"):
+                if await self.page.evaluate("() => !!Runner.instance_ && !!Runner.instance_.tRex"):
                     break
-            except:
+            except Exception:
                 pass
-            time.sleep(0.1)
-        self.page.keyboard.press('Space')  # Start the game
-        time.sleep(0.5)
+            await asyncio.sleep(0.1)
+        await self.page.keyboard.press('Space')
+        await asyncio.sleep(0.5)
 
-    def get_game_state(self):
-        """Fetch game state parameters."""
+    async def get_game_state(self):
         try:
-            self.page.bring_to_front()  # Ensures the page stays in focus
-            distance_str = self.page.evaluate("() => Runner.instance_.distanceMeter.digits.join('')")
+            await self.page.bring_to_front()
+            distance_str = await self.page.evaluate("() => Runner.instance_.distanceMeter.digits.join('')")
             distance = float(distance_str) if distance_str != '' else 0.0
-
             status_map = self.STATUS_MAP
-            
-            # Get obstacle details (xPos, yPos, width, height)
-            obstacles = self.page.evaluate("""
+            obstacles = await self.page.evaluate("""
                 () => Runner.instance_.horizon.obstacles.map(o => ({
                     x: o.xPos,
                     y: o.yPos,
@@ -72,59 +90,64 @@ class DinoGame:
                     height: o.height || 0
                 }))
             """)
-            
-            # If there are fewer than max_obstacles, pad the data
             while len(obstacles) < self.max_obstacles:
                 obstacles.append({"x": 0, "y": 0, "width": 0, "height": 0})
-
-            # Flatten obstacles into a list of features
             obstacles_features = [value for obstacle in obstacles[:self.max_obstacles] for value in [obstacle["x"], obstacle["y"], obstacle["width"], obstacle["height"]]]
-
             state = {
-                "status": status_map[self.page.evaluate("() => Runner.instance_.tRex.status")],
+                "status": status_map[await self.page.evaluate("() => Runner.instance_.tRex.status")],
                 "distance": distance,
-                "speed": round(float(self.page.evaluate("() => Runner.instance_.currentSpeed")),2),
-                "jump_velocity": round(float(self.page.evaluate("() => Runner.instance_.tRex.jumpVelocity")),2),
-                "y_position": round(float(self.page.evaluate("() => Runner.instance_.tRex.yPos")),2),
+                "speed": round(float(await self.page.evaluate("() => Runner.instance_.currentSpeed")), 2),
+                "jump_velocity": round(float(await self.page.evaluate("() => Runner.instance_.tRex.jumpVelocity")), 2),
+                "y_position": round(float(await self.page.evaluate("() => Runner.instance_.tRex.yPos")), 2),
                 "obstacles": obstacles_features
             }
-            # print(state)
-
             return state
-
         except Exception as e:
-            if getattr(self, "verbose", False):
-                print(f"Error fetching game state: {e}")
+            if self.verbose:
+                print(f"[DinoGame] Error fetching game state: {e}")
             return None
 
-    def precise_sleep(self, duration):
-        """Use perf_counter for more precise sleep duration."""
+    async def precise_sleep(self, duration):
         if duration > 0.01:
-            time.sleep(duration)
+            await asyncio.sleep(duration)
         else:
             start = time.perf_counter()
             while time.perf_counter() - start < duration:
                 pass
 
-    def send_action(self, action):
-        """Send a specified action to the game."""
+    async def send_action(self, action):
         try:
-            status = self.page.evaluate("() => Runner.instance_.tRex.status")
+            status = await self.page.evaluate("() => Runner.instance_.tRex.status")
             if action == "run":
-                pass  # No action needed
-            elif action == "jump":
-                if status == "RUNNING":  # Only jump if on ground
-                    self.page.keyboard.down("ArrowUp")
-                    self.precise_sleep(0.12)  # Fixed duration for consistent jump height
-                    self.page.keyboard.up("ArrowUp")
-            else:
                 pass
+            elif action == "jump":
+                if status == "RUNNING":
+                    await self.page.keyboard.down("ArrowUp")
+                    await self.precise_sleep(0.12)
+                    await self.page.keyboard.up("ArrowUp")
         except Exception as e:
-            if getattr(self, "verbose", False):
-                print(f"Error in send_action: {e}")
+            if self.verbose:
+                print(f"[DinoGame] Error in send_action: {e}")
             raise
 
-    def close(self):
-        """Close the browser session gracefully."""
-        self.browser.close()
-        self.playwright.stop()
+    async def close(self):
+        if self.page:
+            await self.page.close()
+        if self.context:
+            await self.context.close()
+
+async def main():
+    start_dino_server()
+    browser = get_browser()
+    game = DinoGame(browser, verbose=True)
+    await game.init()
+    await game.start_game()
+    await asyncio.sleep(10)  # Let the game run for a while
+    state = await game.get_game_state()
+    print(state)
+    await game.close()
+    await browser.close()
+    await _shared_playwright.stop()
+
+if __name__ == "__main__":
+    asyncio.run(main())
