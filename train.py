@@ -21,6 +21,7 @@ MAX_STEPS = int(os.getenv('MAX_STEPS', 1000))
 VERBOSE = int(os.getenv('VERBOSE', 1))
 DEVICE = os.getenv('DEVICE', 'cuda')
 LOG_INTERVAL = os.getenv('LOG_INTERVAL', 1)
+HEADLESS = int(os.getenv('HEADLESS', 1))  # 1=headless, 0=visual
 
 if ALGO not in ['ppo', 'a2c', 'dqn']:
     raise ValueError(f"Unknown algorithm: {ALGO}")
@@ -33,7 +34,9 @@ model_name = f"{ALGO}_{N_ENVS}env" if ALGO == 'dqn' else f"{ALGO}_{N_ENVS}env_{N
 tensorboard_log = f"./tensorboard_logs/{model_name}/"
 checkpoint_path = f"./checkpoints/{model_name}/"
 
-env_kwargs = {'verbose': False, 'max_steps': MAX_STEPS}
+env_kwargs = {'verbose': False, 'max_steps': MAX_STEPS, 'headless': bool(HEADLESS)}
+if not HEADLESS:
+    env_kwargs['render_mode'] = 'human'
 
 if ALGO in ['ppo', 'a2c']:
     env = make_vec_env(DinoEnv, n_envs=N_ENVS, env_kwargs=env_kwargs, seed=SEED)
