@@ -9,9 +9,12 @@ class DinoEnv(gym.Env):
     """Custom environment for Chrome Dino game using Playwright automation."""
     metadata = {'render_modes': ['human']}
 
-    def __init__(self, verbose=False, max_steps=1000, headless=True):
+    def __init__(self, verbose=False, max_steps=1000, headless=True, render_mode=None):
         super().__init__()
         start_dino_server()
+        
+        # Store render_mode for compatibility with vectorized environments
+        self.render_mode = render_mode
         
         self.verbose = verbose
         self.max_steps = max_steps
@@ -51,9 +54,6 @@ class DinoEnv(gym.Env):
         self.game_thread = threading.Thread(target=self._game_loop, daemon=True)
         self.game_thread.start()
         
-        # Wait for initialization
-        self._send_command("init")
-        
     def _game_loop(self):
         """Main game loop running in separate thread."""
         import asyncio
@@ -65,7 +65,6 @@ class DinoEnv(gym.Env):
         
         async def handle_commands():
             await game.init()
-            self.result_queue.put("initialized")
             
             while True:
                 try:
@@ -199,20 +198,39 @@ class DinoEnv(gym.Env):
 
     def _compute_reward(self, observation):
         """Calculate reward based on game progress and status."""
-        running_survival_reward = 5.0
-        jumping_penalty = -1.0
+        status = self.statuses[observation["status"]]
+        
+        # Base rewards
         crash_penalty = -100.0
-
-        reward = running_survival_reward
-        # Add distance-based reward
+        base_running_reward = 1.0
+        base_jumping_penalty = -2.0
+        
+        # Progress reward (most important)
         progress = observation["distance"][0] - getattr(self, "previous_distance", 0.0)
-        reward += progress * 10.0
+        progress_reward = progress * 50.0  # Increased importance
         self.previous_distance = observation["distance"][0]
-        # Add penalties instead of overwriting
-        if self.statuses[observation["status"]] == "JUMPING":
-            reward += jumping_penalty
-        if self.statuses[observation["status"]] == "CRASHED":
-            reward += crash_penalty
+        
+        # Status-based rewards
+        if status == "CRASHED":
+            return crash_penalty
+        elif status == "RUNNING":
+            reward = base_running_reward + progress_reward
+        elif status == "JUMPING":
+            # Only reward jumping if there's an obstacle nearby
+            obstacles = observation["obstacles"].reshape(-1, 4)
+            obstacle_ahead = False
+            for obs in obstacles:
+                if obs[0] > 0 and obs[0] < 100:  # Obstacle within 100 units
+                    obstacle_ahead = True
+                    break
+            
+            if obstacle_ahead:
+                reward = progress_reward  # No penalty for necessary jumps
+            else:
+                reward = base_jumping_penalty + progress_reward  # Penalty for unnecessary jumps
+        else:
+            reward = 0.0
+        
         return round(reward, 2)
     
     def close(self):
@@ -231,6 +249,7 @@ gym.register(
     kwargs={
         'verbose': False,
         'max_steps': 1000,
-        'headless': True
+        'headless': True,
+        'render_mode': None
     }
 )

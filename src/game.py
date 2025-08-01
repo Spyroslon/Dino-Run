@@ -6,19 +6,17 @@ import os
 import asyncio
 
 # --- Shared infrastructure ---
+_server_started = False
 _shared_browser = None
 _shared_playwright = None
-_server_started = False
 _shared_browser_headless = None
-_browser_lock = threading.Lock()
-_server_lock = threading.Lock()
+_lock = threading.Lock()
 
 def start_dino_server():
     """Start the local HTTP server for the Dino game if not already running."""
     global _server_started
-    with _server_lock:
+    with _lock:
         if not _server_started:
-            # Fix: t-rex-runner is at project root, not in src/
             web_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 't-rex-runner')
             if not os.path.exists(web_dir):
                 raise FileNotFoundError(f"t-rex-runner directory not found at {web_dir}")
@@ -32,13 +30,15 @@ def start_dino_server():
             except Exception as e:
                 raise RuntimeError(f"Failed to start server on port 8000: {e}")
 
-async def _get_shared_browser(headless=True):
-    """Get or create a shared Playwright browser instance."""
+async def get_shared_browser(headless=True):
+    """Get the shared browser instance."""
     global _shared_browser, _shared_playwright, _shared_browser_headless
     if _shared_browser is None or _shared_browser_headless != headless:
-        if _shared_playwright is not None and _shared_browser is not None:
+        if _shared_browser:
             await _shared_browser.close()
+        if _shared_playwright:
             await _shared_playwright.stop()
+        
         _shared_playwright = await async_playwright().start()
         _shared_browser = await _shared_playwright.chromium.launch(headless=headless, args=[
             "--no-sandbox",
@@ -50,21 +50,15 @@ async def _get_shared_browser(headless=True):
     return _shared_browser
 
 def get_browser(headless=True):
-    """Synchronously get the shared browser instance."""
-    with _browser_lock:
-        try:
-            # Try to get existing loop
-            loop = asyncio.get_running_loop()
-            # If we're in an async context, this is problematic
-            raise RuntimeError("get_browser() called from async context - use _get_shared_browser() directly")
-        except RuntimeError:
-            # No running loop, safe to create new one
-            try:
-                loop = asyncio.get_event_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-            return loop.run_until_complete(_get_shared_browser(headless=headless))
+    """Sync wrapper for shared browser."""
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    
+    return loop.run_until_complete(get_shared_browser(headless))
 
 class DinoGame:
     """
@@ -125,16 +119,8 @@ class DinoGame:
             if self.verbose:
                 print('Loading game page...')
             await self.page.goto('http://localhost:8000', wait_until='domcontentloaded')
-            # Wait for the game to be ready
-            for i in range(50):
-                try:
-                    if await self.page.evaluate("() => !!Runner.instance_ && !!Runner.instance_.tRex"):
-                        break
-                except Exception:
-                    pass
-                await asyncio.sleep(0.1)
-            else:
-                raise TimeoutError("Game failed to load after 5 seconds")
+            # Simple wait for game to load
+            await asyncio.sleep(1.0)  # Give it time to initialize
             await self.page.keyboard.press('Space')
 
     async def get_game_state(self):
@@ -254,7 +240,8 @@ class DinoGame:
 
 async def main():
     start_dino_server()
-    browser = await _get_shared_browser()
+    playwright = await async_playwright().start()
+    browser = await playwright.chromium.launch(headless=False)
     game = DinoGame(browser, verbose=True)
     await game.init()
     await game.start_game()
@@ -262,7 +249,8 @@ async def main():
     state = await game.get_game_state()
     print(state)
     await game.close()
-    # Don't close shared browser - it may be used by other instances
+    await browser.close()
+    await playwright.stop()
 
 if __name__ == "__main__":
     asyncio.run(main())
