@@ -1,12 +1,13 @@
 from stable_baselines3 import PPO
-from dino_env import DinoEnv
+import dino_env  # This registers the environment
+import gymnasium as gym
 import os
 
 # Load headless setting from environment variable
 HEADLESS = int(os.getenv('HEADLESS', 1))  # 1=headless, 0=visual
 
 # Load the environment and trained model
-env = DinoEnv(headless=bool(HEADLESS))  # Enable rendering for visualization
+env = gym.make('DinoRun-v0', headless=bool(HEADLESS))  # Enable rendering for visualization
 model = PPO.load("checkpoints/ppo_1env_2048steps/dino_model_ppo_1env_2048steps_final.zip")
 
 # Test the model

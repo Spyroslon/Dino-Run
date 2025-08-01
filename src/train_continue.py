@@ -1,12 +1,13 @@
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
-from dino_env import DinoEnv
+import dino_env  # This registers the environment
+import gymnasium as gym
 
 # Load the trained model
 model = PPO.load("ppo_4_dino_100000_steps.zip")
 
 # Create a new environment for training
-env = DinoEnv()
+env = gym.make('DinoRun-v0')
 model.set_env(env)  # Attach the environment to the loaded model
 
 # Define a new checkpoint callback to save further progress

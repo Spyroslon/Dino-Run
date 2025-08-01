@@ -1,6 +1,7 @@
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
-from dino_env import DinoEnv
+import dino_env  # This registers the environment
+import gymnasium as gym
 
 def linear_schedule(initial_value):
     def scheduler(progress_remaining):
@@ -11,7 +12,7 @@ def linear_schedule(initial_value):
 old_model = PPO.load("ppo_4_dino_400000_steps.zip")
 
 # Create a new environment
-env = DinoEnv()
+env = gym.make('DinoRun-v0')
 
 # Define new hyperparameters for exploration
 new_hyperparams = {

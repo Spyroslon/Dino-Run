@@ -14,7 +14,6 @@ checkpoints*
 
 # Archives
 *.zip
-!ppo_4_dino_280000_steps.zip
 
 # Dino game assets
 t-rex-runner/

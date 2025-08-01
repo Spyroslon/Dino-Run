@@ -6,7 +6,7 @@
 
 ## Requirements
 
-- Python 3.10 (recommended)
+- Python 3.13 (recommended)
 - Node.js (for Playwright)
 - Google Chrome (for Playwright)
 
@@ -14,7 +14,7 @@
 
 ```bash
 # Create and activate a virtual environment
-py -3.10 -m venv .dinorun-venv
+py -3.13 -m venv .dinorun-venv
 source .dinorun-venv/Scripts/activate  # Bash (Windows)
 
 # Install dependencies
