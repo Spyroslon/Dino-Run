@@ -3,15 +3,13 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.vec_env import VecMonitor
 from stable_baselines3.common.monitor import Monitor
-import dino_env  # Registers DinoRun-v0 environment
-import gymnasium as gym
 from dotenv import load_dotenv
 import os
+import gymnasium as gym
+import dino_env
 
 # Load config from .env.local
 load_dotenv('.env.local')
-
-# Required environment variables - no defaults
 ALGO = os.getenv('ALGO')
 N_ENVS = int(os.getenv('N_ENVS'))
 SEED = int(os.getenv('SEED'))
