@@ -113,8 +113,7 @@ try:
         callback=checkpoint_callback,
         reset_num_timesteps=not CONTINUE_MODE,
         progress_bar=True,
-        log_interval=LOG_INTERVAL,
-        tb_log_name=run_folder
+        log_interval=LOG_INTERVAL
     )
     model.save(f"{checkpoint_path}/final_model")
     print(f"Training complete. Model saved to {checkpoint_path}/final_model")
