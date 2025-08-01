@@ -8,9 +8,10 @@ import os
 import gymnasium as gym
 import dino_env
 
-# Load config from .env.local
+# Load config
 load_dotenv('.env.local')
 ALGO = os.getenv('ALGO')
+CONTINUE_MODE = os.getenv('CONTINUE_MODE', 'false').lower() == 'true'
 N_ENVS = int(os.getenv('N_ENVS'))
 SEED = int(os.getenv('SEED'))
 TOTAL_TIMESTEPS = int(os.getenv('TOTAL_TIMESTEPS'))
@@ -68,41 +69,32 @@ run_folder = f"{ALGO.upper()}_{run_number}"
 checkpoint_path = os.path.join(checkpoint_base, run_folder)
 os.makedirs(checkpoint_path, exist_ok=True)
 
-# Create model with tensorboard logging
-if ALGO == 'ppo':
-    model = PPO(
-        "MultiInputPolicy",
-        env,
-        verbose=VERBOSE,
-        learning_rate=5e-4,
-        n_steps=N_STEPS,
-        batch_size=BATCH_SIZE,
-        ent_coef=ENT_COEF,
-        tensorboard_log=tensorboard_base,
-        device=DEVICE,
-        seed=SEED
-    )
-elif ALGO == 'a2c':
-    model = A2C(
-        "MultiInputPolicy",
-        env,
-        verbose=VERBOSE,
-        n_steps=N_STEPS,
-        tensorboard_log=tensorboard_base,
-        device=DEVICE,
-        seed=SEED
-    )
-elif ALGO == 'dqn':
-    model = DQN(
-        "MultiInputPolicy",
-        env,
-        verbose=VERBOSE,
-        tensorboard_log=tensorboard_base,
-        device=DEVICE,
-        seed=SEED
-    )
-else:
+# Model creation
+models = {'ppo': PPO, 'a2c': A2C, 'dqn': DQN}
+if ALGO not in models:
     raise ValueError(f"Unknown algorithm: {ALGO}")
+
+if CONTINUE_MODE:
+    model_file = input("Enter model file path: ").strip()
+    model = models[ALGO].load(model_file)
+    model.set_env(env)
+    model.tensorboard_log = tensorboard_base
+    print(f"Loaded {ALGO.upper()} model from: {model_file}")
+else:
+    model_args = {
+        "policy": "MultiInputPolicy",
+        "env": env,
+        "verbose": VERBOSE,
+        "tensorboard_log": tensorboard_base,
+        "device": DEVICE,
+        "seed": SEED
+    }
+    if ALGO != 'dqn':
+        model_args["n_steps"] = N_STEPS
+    if ALGO == 'ppo':
+        model_args.update({"learning_rate": 5e-4, "batch_size": BATCH_SIZE, "ent_coef": ENT_COEF})
+    
+    model = models[ALGO](**model_args)
 
 # Setup callbacks with matching path
 checkpoint_callback = CheckpointCallback(
@@ -111,17 +103,18 @@ checkpoint_callback = CheckpointCallback(
     name_prefix=run_folder,
 )
 
-# Train model
-print(f"Starting {ALGO.upper()} training with {N_ENVS} environments...")
-print(f"Total timesteps: {TOTAL_TIMESTEPS:,}")
-print(f"Checkpoint path: {checkpoint_path}")
+# Train
+mode = "Continuing" if CONTINUE_MODE else "Starting"
+print(f"{mode} {ALGO.upper()} training | {N_ENVS} envs | {TOTAL_TIMESTEPS:,} steps | Run: {run_folder}")
 
 try:
     model.learn(
         total_timesteps=TOTAL_TIMESTEPS,
         callback=checkpoint_callback,
+        reset_num_timesteps=not CONTINUE_MODE,
         progress_bar=True,
-        log_interval=LOG_INTERVAL
+        log_interval=LOG_INTERVAL,
+        tb_log_name=run_folder
     )
     model.save(f"{checkpoint_path}/final_model")
     print(f"Training complete. Model saved to {checkpoint_path}/final_model")

@@ -30,8 +30,8 @@ class DinoEnv(gym.Env):
         self.max_obstacles = 3
         self.observation_space = spaces.Dict({
             "status": spaces.Discrete(4),
-            "distance": spaces.Box(low=0, high=1000.0, shape=(1,), dtype=np.float32),      # distance/1000
-            "speed": spaces.Box(low=0.6, high=10.0, shape=(1,), dtype=np.float32),        # speed/10 
+            "distance": spaces.Box(low=0, high=1.0, shape=(1,), dtype=np.float32),         # distance/1000
+            "speed": spaces.Box(low=0.06, high=15.0, shape=(1,), dtype=np.float32),        # speed/10 
             "jump_velocity": spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32), # velocity/50
             "y_position": spaces.Box(low=0, high=1.0, shape=(1,), dtype=np.float32),       # y_pos/100
             "obstacles": spaces.Box(low=-100, high=1000.0, shape=(self.max_obstacles * 4,), dtype=np.float32)
@@ -182,7 +182,7 @@ class DinoEnv(gym.Env):
         return {
             "status": 3,  # CRASHED
             "distance": np.array([0.0], dtype=np.float32),
-            "speed": np.array([0.6], dtype=np.float32),  # Minimum speed normalized
+            "speed": np.array([0.06], dtype=np.float32),  # Minimum speed normalized (6/10)
             "jump_velocity": np.array([0.0], dtype=np.float32),
             "y_position": np.array([0.0], dtype=np.float32),
             "obstacles": np.zeros(self.max_obstacles * 4, dtype=np.float32)
@@ -199,37 +199,46 @@ class DinoEnv(gym.Env):
     def _compute_reward(self, observation):
         """Calculate reward based on game progress and status."""
         status = self.statuses[observation["status"]]
-        
-        # Base rewards
-        crash_penalty = -100.0
-        base_running_reward = 1.0
-        base_jumping_penalty = -2.0
+        speed_normalized = observation["speed"][0]  # Use actual speed from observation
         
         # Progress reward (most important)
         progress = observation["distance"][0] - getattr(self, "previous_distance", 0.0)
-        progress_reward = progress * 50.0  # Increased importance
+        progress_reward = progress * 200.0  # Much higher importance
         self.previous_distance = observation["distance"][0]
+        
+        # Speed bonus - reward higher normalized speed (0.6 = slow, 1.5+ = fast)
+        speed_bonus = max(0, (speed_normalized - 0.8) * 10.0)  # Bonus for speed above 0.8
         
         # Status-based rewards
         if status == "CRASHED":
+            # Much smaller crash penalty, distance-dependent
+            distance = observation["distance"][0] * 1000
+            crash_penalty = -20.0 - min(distance * 0.05, 30.0)  # -20 to -50 max
             return crash_penalty
         elif status == "RUNNING":
-            reward = base_running_reward + progress_reward
+            reward = 5.0 + progress_reward + speed_bonus
         elif status == "JUMPING":
-            # Only reward jumping if there's an obstacle nearby
+            # Smart jump rewards based on obstacles
             obstacles = observation["obstacles"].reshape(-1, 4)
             obstacle_ahead = False
-            for obs in obstacles:
-                if obs[0] > 0 and obs[0] < 100:  # Obstacle within 100 units
-                    obstacle_ahead = True
-                    break
+            closest_obstacle = float('inf')
             
-            if obstacle_ahead:
-                reward = progress_reward  # No penalty for necessary jumps
+            for obs in obstacles:
+                if obs[0] > 0 and obs[0] < 150:  # Check wider range
+                    obstacle_ahead = True
+                    closest_obstacle = min(closest_obstacle, obs[0])
+            
+            if obstacle_ahead and closest_obstacle < 80:
+                # Good jump timing
+                reward = 3.0 + progress_reward + speed_bonus
+            elif obstacle_ahead:
+                # Okay jump timing
+                reward = 1.0 + progress_reward + speed_bonus
             else:
-                reward = base_jumping_penalty + progress_reward  # Penalty for unnecessary jumps
+                # Unnecessary jump - small penalty
+                reward = -1.0 + progress_reward + speed_bonus
         else:
-            reward = 0.0
+            reward = progress_reward
         
         return round(reward, 2)
     

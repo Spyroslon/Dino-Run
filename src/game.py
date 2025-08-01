@@ -208,8 +208,9 @@ class DinoGame:
                 pass
             elif action == "jump":
                 if status == "RUNNING":
+                    # Fixed jump duration for consistency - same action = same result
                     await self.page.keyboard.down("ArrowUp")
-                    await self.precise_sleep(0.12)
+                    await self.precise_sleep(0.08)  # Consistent 80ms
                     await self.page.keyboard.up("ArrowUp")
         except Exception as e:
             if self.verbose:
