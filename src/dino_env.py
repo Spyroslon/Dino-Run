@@ -68,7 +68,7 @@ class DinoEnv(gym.Env):
             
             while True:
                 try:
-                    command, args = self.command_queue.get(timeout=0.1)
+                    command, args = self.command_queue.get(timeout=0.01)
                     
                     if command == "start_game":
                         await game.start_game()

@@ -79,11 +79,10 @@ class DinoGame:
                 if (state_check and 
                     state_check['status'] == 'RUNNING' and 
                     not state_check['crashed']):
-                    # Additional small delay to ensure clean state
-                    await asyncio.sleep(0.05) 
+                    await asyncio.sleep(0.1) 
                     break
                     
-                await asyncio.sleep(0.05)
+                await asyncio.sleep(0.01)
             except:
                 await asyncio.sleep(0.05)
 
