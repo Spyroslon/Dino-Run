@@ -131,7 +131,6 @@ class DinoEnv(gym.Env):
         try:
             self._send_command("action", action_str)
             observation = self._get_observation()
-            print(f"Observation: {observation}")
         except Exception as e:
             if self.verbose:
                 print(f"Error in step: {e}")
