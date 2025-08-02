@@ -101,10 +101,14 @@ class DinoGame:
             game_state = 'no_instance'
 
         if game_state == 'crashed':
-            # Game is loaded but crashed - just restart
+            # Game is loaded but crashed - restart and wait for actual running state
             if self.verbose:
                 print('Game crashed, restarting...')
             await self.page.keyboard.press('Space')
+            # Wait for game to transition from crashed to actually running
+            await self._wait_for_running_state()
+            # Give game a moment to stabilize before reading states
+            await asyncio.sleep(0.1)
         elif game_state in ['running', 'no_trex']:
             # Game is running or loading - don't reload page, just ensure it's started
             if self.verbose:
@@ -119,9 +123,26 @@ class DinoGame:
             if self.verbose:
                 print('Loading game page...')
             await self.page.goto('http://localhost:8000', wait_until='domcontentloaded')
-            # Simple wait for game to load
-            await asyncio.sleep(1.0)  # Give it time to initialize
+            # Wait for game to initialize
+            await self._wait_for_running_state(timeout=2.0)
             await self.page.keyboard.press('Space')
+
+    async def _wait_for_running_state(self, timeout=1.0):
+        """Wait for game to be running."""
+        start_time = asyncio.get_event_loop().time()
+        while True:
+            try:
+                status = await self.page.evaluate("() => Runner.instance_?.tRex?.status")
+                if status == 'RUNNING':
+                    await asyncio.sleep(0.1)  # Brief delay to let game fully stabilize
+                    return
+                    
+                if asyncio.get_event_loop().time() - start_time > timeout:
+                    return
+                    
+                await asyncio.sleep(0.05)
+            except Exception:
+                await asyncio.sleep(0.05)
 
     async def get_game_state(self):
         if not self.page:
@@ -142,12 +163,16 @@ class DinoGame:
                     if (!runner || !runner.tRex) return null;
                     
                     const distanceStr = runner.distanceMeter.digits.join('');
-                    const obstacles = runner.horizon.obstacles.map(o => ({
-                        x: o.xPos,
-                        y: o.yPos,
-                        width: o.width,
-                        height: o.height || 0
-                    }));
+                    const obstacles = runner.horizon.obstacles.map(o => {
+                        const height = o.typeConfig?.height || 50;
+                        console.log(`Obstacle: x=${o.xPos}, y=${o.yPos}, width=${o.width}, height=${height}, type=${o.typeConfig?.type}`);
+                        return {
+                            x: o.xPos,
+                            y: o.yPos,
+                            width: o.width,
+                            height: height
+                        };
+                    });
                     
                     return {
                         distance: distanceStr,

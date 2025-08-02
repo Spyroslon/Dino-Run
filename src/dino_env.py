@@ -131,6 +131,7 @@ class DinoEnv(gym.Env):
         try:
             self._send_command("action", action_str)
             observation = self._get_observation()
+            print(f"Observation: {observation}")
         except Exception as e:
             if self.verbose:
                 print(f"Error in step: {e}")
@@ -170,8 +171,8 @@ class DinoEnv(gym.Env):
         
         return {
             "status": state["status"],
-            "distance": np.array([state["distance"] / 1000.0], dtype=np.float32),  # Normalize distance
-            "speed": np.array([state["speed"] / 10.0], dtype=np.float32),          # Normalize speed
+            "distance": np.array([state["distance"] / 1000.0], dtype=np.float32),
+            "speed": np.array([state["speed"] / 10.0], dtype=np.float32),
             "jump_velocity": np.array([state["jump_velocity"] / 50.0], dtype=np.float32),
             "y_position": np.array([state["y_position"] / 100.0], dtype=np.float32),
             "obstacles": np.array(state["obstacles"], dtype=np.float32)
@@ -197,50 +198,24 @@ class DinoEnv(gym.Env):
         }
 
     def _compute_reward(self, observation):
-        """Calculate reward based on game progress and status."""
+        """Simple reward: make progress, don't crash. Let the agent learn everything else."""
         status = self.statuses[observation["status"]]
-        speed_normalized = observation["speed"][0]  # Use actual speed from observation
         
-        # Progress reward (most important)
+        # Progress is the main reward - more distance = better
         progress = observation["distance"][0] - getattr(self, "previous_distance", 0.0)
-        progress_reward = progress * 200.0  # Much higher importance
         self.previous_distance = observation["distance"][0]
         
-        # Speed bonus - reward higher normalized speed (0.6 = slow, 1.5+ = fast)
-        speed_bonus = max(0, (speed_normalized - 0.8) * 10.0)  # Bonus for speed above 0.8
+        if self.verbose and progress > 0:
+            print(f"Progress this step: {progress}")
         
-        # Status-based rewards
+        # Scale progress to reasonable reward range
+        progress_reward = progress * 100.0  # Will tune based on actual values
+        
+        # Crash penalty should require ~5-10 seconds of progress to recover from
         if status == "CRASHED":
-            # Much smaller crash penalty, distance-dependent
-            distance = observation["distance"][0] * 1000
-            crash_penalty = -20.0 - min(distance * 0.05, 30.0)  # -20 to -50 max
-            return crash_penalty
-        elif status == "RUNNING":
-            reward = 5.0 + progress_reward + speed_bonus
-        elif status == "JUMPING":
-            # Smart jump rewards based on obstacles
-            obstacles = observation["obstacles"].reshape(-1, 4)
-            obstacle_ahead = False
-            closest_obstacle = float('inf')
-            
-            for obs in obstacles:
-                if obs[0] > 0 and obs[0] < 150:  # Check wider range
-                    obstacle_ahead = True
-                    closest_obstacle = min(closest_obstacle, obs[0])
-            
-            if obstacle_ahead and closest_obstacle < 80:
-                # Good jump timing
-                reward = 3.0 + progress_reward + speed_bonus
-            elif obstacle_ahead:
-                # Okay jump timing
-                reward = 1.0 + progress_reward + speed_bonus
-            else:
-                # Unnecessary jump - small penalty
-                reward = -1.0 + progress_reward + speed_bonus
+            return -50.0  # Will tune based on observed progress rates
         else:
-            reward = progress_reward
-        
-        return round(reward, 2)
+            return progress_reward
     
     def close(self):
         """Clean up resources."""

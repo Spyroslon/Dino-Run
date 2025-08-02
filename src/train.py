@@ -111,7 +111,7 @@ try:
     model.learn(
         total_timesteps=TOTAL_TIMESTEPS,
         callback=checkpoint_callback,
-        reset_num_timesteps=not CONTINUE_MODE,
+        reset_num_timesteps=True,
         progress_bar=True,
         log_interval=LOG_INTERVAL
     )
